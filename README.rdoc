@@ -12,13 +12,12 @@ impossible to complete one round in a single day (only 6 games can be played). R
 for this round on the next gameday and will start a new round right after.
 
 
-== How to use
-
+== Installation
   gem install rrschedule (not on gemcutter yet... hold on)
   require 'rrschedule.rb'
 
+== Generate the schedule
   Time.zone = "America/New_York"
-
   teams = ["Rockets","Jetpacks","Snakes","Cobras","Wolves","Huskies","Tigers","Lions","Moose","Sprinklers","Pacers","Cyclops","Munchkins","Magicians","French Fries"]
   schedule=RRSchedule::Schedule.new(
                                   :teams => teams,  #array of teams that will compete against each other in the season (can be any kind of object)
@@ -36,11 +35,15 @@ for this round on the next gameday and will start a new round right after.
                                   :game_times => ["10:00 AM", "1:00 PM"] #Times of the day where the games are played
                                 )
   res=schedule.generate
+  
+== Playing with the output
 
-  #human readable schedule
+=== human readable schedule
+  
   puts schedule.to_s
 
-  #official round-robin rounds without the schedule info
+=== Round by round... without the schedule info
+
   #If you have an ODD number of teams you will see a "dummy" opponent in each round
   schedule.rounds.each do |round|
     puts "Round ##{round.round}"
@@ -50,6 +53,7 @@ for this round on the next gameday and will start a new round right after.
     puts "\n"
   end
 
+=== Team schedule
   #display a team schedule
   test_team = "Sprinklers"
   games=schedule.by_team(test_team)
@@ -58,14 +62,14 @@ for this round on the next gameday and will start a new round right after.
     puts "#{g.game_date.strftime("%Y-%m-%d")}: against #{g.team_a == test_team ? g.team_b.to_s : g.team_a.to_s} on playing surface ##{g.playing_surface} at #{g.game_time}"     
   end
 
-  #face_to_face
+=== Face to Face
   games=schedule.face_to_face("Lions","Moose")
   puts "FACE TO FACE: Lions Vs Moose"
   games.each do |g|
     puts g.game_date.to_s + " on playing surface " + g.playing_surface.to_s + " at " + g.game_time.to_s
   end
 
-  #How to iterate the schedule
+=== Iterate the schedule
   schedule.gamedays.each do |gd,games|
     puts gd
     puts "===================="
