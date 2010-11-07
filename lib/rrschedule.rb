@@ -20,7 +20,7 @@ require 'active_support'
 module RRSchedule
   class Schedule
     attr_accessor :playing_surfaces, :game_times, :cycles, :wdays, :start_date, :exclude_dates, :shuffle_initial_order
-    attr_reader :teams
+    attr_reader :teams, :rounds
 
     def initialize(params={})
       store_params(params)
@@ -31,6 +31,7 @@ module RRSchedule
       @teams = @teams.sort_by{rand} if self.shuffle_initial_order
       initial_order = @teams.clone
       current_cycle = 0
+      current_round = 0
       all_games = []      
 
       #Loop start here
@@ -44,6 +45,11 @@ module RRSchedule
           games << {:team_a => team_a, :team_b => team_b}
           all_games << {:team_a => team_a, :team_b => team_b}
         end
+        #round completed
+        current_round += 1
+        @rounds ||= []
+        @rounds << Round.new(:round => current_round, :games => games.collect {|g| Game.new(:team_a => g[:team_a], :team_b => g[:team_b])})
+        
         games.reject! {|g| g[:team_a] == :dummy || g[:team_b] == :dummy}
         all_games.reject! {|g| g[:team_a] == :dummy || g[:team_b] == :dummy}
           
@@ -89,7 +95,7 @@ module RRSchedule
     
     def gamedays
       @schedule.sort
-    end
+    end        
     
     def by_team(team)
       gms=[]
@@ -153,7 +159,7 @@ module RRSchedule
       self.shuffle_initial_order = params[:shuffle_initial_order]
       self.exclude_dates = params[:exclude_dates] || []
       self.start_date = params[:start_date] || Time.now.beginning_of_day
-      self.wdays = Array(params[:wdays]) if params[:wdays].respond_to?(:to_ary) || params[:wdays].respond_to?(:to_int)
+      self.wdays = Array(params[:wdays]) if params[:wdays].respond_to?(:to_ary) || params[:wdays].respond_to?(:to_int)      
     end
     
     
@@ -168,6 +174,15 @@ module RRSchedule
       self.playing_surface = params[:playing_surface]
       self.game_time = params[:game_time]            
       self.game_date = params[:game_date]
+    end
+  end
+  
+  class Round
+    attr_accessor :round, :games
+    
+    def initialize(params={})
+      self.round = params[:round]
+      self.games = params[:games]
     end
   end
 end

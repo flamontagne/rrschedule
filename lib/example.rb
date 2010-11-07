@@ -1,4 +1,4 @@
-require 'rrschedule.rb'
+require 'lib/rrschedule.rb'
 Time.zone = "America/New_York"
 
 teams = ["Rockets","Jetpacks","Snakes","Cobras","Wolves","Huskies","Tigers","Lions","Moose","Sprinklers","Pacers","Cyclops","Munchkins","Magicians","French Fries"]
@@ -22,6 +22,13 @@ res=schedule.generate
 #human readable schedule
 puts schedule.to_s
 
+schedule.rounds.each do |round|
+  puts "Round ##{round.round}"
+  round.games.each do |g|
+    puts g.team_a.to_s + " Vs " + g.team_b.to_s
+  end
+  puts "\n"
+end
 
 #display a team schedule
 #test_team = "Sprinklers"
