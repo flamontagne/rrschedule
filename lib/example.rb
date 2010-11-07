@@ -1,4 +1,4 @@
-require 'lib/rrschedule.rb'
+require 'rrschedule.rb'
 Time.zone = "America/New_York"
 
 teams = ["Rockets","Jetpacks","Snakes","Cobras","Wolves","Huskies","Tigers","Lions","Moose","Sprinklers","Pacers","Cyclops","Munchkins","Magicians","French Fries"]

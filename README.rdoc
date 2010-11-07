@@ -1,16 +1,15 @@
 = rrschedule
 
-Description goes here.
+RRSchedule make it easier to generate Round-Robin sport seasons. To generate a schedule, it needs a team list, a season 
+start date, the day(s) of the week where the games are played and some other options.
 
-== Note on Patches/Pull Requests
- 
-* Fork the project.
-* Make your feature addition or bug fix.
-* Add tests for it. This is important so I don't break it in a
-  future version unintentionally.
-* Commit, do not mess with rakefile, version, or history.
-  (if you want to have your own version, that is fine but bump version in a commit by itself I can ignore when I pull)
-* Send me a pull request. Bonus points for topic branches.
+It takes into consideration physical constraints such as the number of playing surfaces availables and game times.
+Each round of the round-robin is splitted into groups that respect these constraints. 
+
+Say for example that you want to generate a round-robin schedule for your 15-teams volleyball league. 
+If there are only 3 volleyball fields available and that games are played each monday at 6PM and 8PM, this is technically 
+impossible to complete one round in a single day (only 6 games can be played). RRSchedule will put the rest of the games
+for this round on the next gameday and will start a new round right after.
 
 == Copyright
 

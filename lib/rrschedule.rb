@@ -1,21 +1,8 @@
-# RRSchedule make it easier to generate Round-Robin sport seasons. To generate a schedule, it needs a team list, a season 
-# start date, the day(s) of the week where the games are played and some other options.
-#
-# It takes into consideration physical constraints such as the number of playing surfaces availables and game times.
-# Each round of the round-robin is splitted into groups that respect these constraints. 
-#
-# Say for example that you want to generate a round-robin schedule for your 15-teams volleyball league. 
-# If there are only 3 volleyball fields available and that games are played each monday at 6PM and 8PM, this is technically 
-# impossible to complete one round in a single day (only 6 games can be played). RRSchedule will put the rest of the games
-# for this round on the next gameday and will start a new round right after.
-#
-# Version 0.1
+# rrschedule (Round Robin Schedule generator)
 # Auhtor: François Lamontagne
 ############################################################################################################################
-
 require 'rubygems'
 require 'active_support'
-
 
 module RRSchedule
   class Schedule
