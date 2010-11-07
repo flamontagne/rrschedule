@@ -23,7 +23,9 @@ Gem::Specification.new do |s|
      "README.rdoc",
      "Rakefile",
      "VERSION",
+     "lib/example.rb",
      "lib/rrschedule.rb",
+     "rrschedule.gemspec",
      "test/helper.rb",
      "test/test_rrschedule.rb"
   ]

@@ -13,7 +13,7 @@ for this round on the next gameday and will start a new round right after.
 
 
 == Installation
-  gem install rrschedule (not on gemcutter yet... hold on)
+  gem install rrschedule
   require 'rrschedule.rb'
 
 == Prepare the schedule
@@ -85,7 +85,7 @@ for this round on the next gameday and will start a new round right after.
     puts g.game_date.to_s + " on playing surface " + g.playing_surface.to_s + " at " + g.game_time.to_s
   end
 
-=== Iterate the schedule
+=== Iterate through schedule
   schedule.gamedays.each do |gd,games|
     puts gd
     puts "===================="
@@ -94,7 +94,3 @@ for this round on the next gameday and will start a new round right after.
     end
     puts "\n"
   end
-
-== Copyright
-
-Copyright (c) 2010 flamontagne. See LICENSE for details.
