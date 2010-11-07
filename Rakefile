@@ -5,8 +5,8 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |gem|
     gem.name = "rrschedule"
-    gem.summary = %Q{TODO: one-line summary of your gem}
-    gem.description = %Q{TODO: longer description of your gem}
+    gem.summary = %Q{Round-Robin schedule generator}
+    gem.description = %Q{This gem automate the process of creating a round-robin sport schedule.}
     gem.email = "flamontagne@azanka.ca"
     gem.homepage = "http://github.com/flamontagne/rrschedule"
     gem.authors = ["flamontagne"]
