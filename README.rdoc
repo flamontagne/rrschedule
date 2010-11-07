@@ -53,16 +53,14 @@ for this round on the next gameday and will start a new round right after.
                                 )
 
 == Generate the schedule
-  res=schedule.generate
+  schedule.generate
   
 == Playing with the output
 
 === human readable schedule
-  
   puts schedule.to_s
 
 === Round by round... without the schedule info
-
   #If you have an ODD number of teams you will see a "dummy" opponent in each round
   schedule.rounds.each do |round|
     puts "Round ##{round.round}"
@@ -73,7 +71,6 @@ for this round on the next gameday and will start a new round right after.
   end
 
 === Team schedule
-  #display a team schedule
   test_team = "Sprinklers"
   games=schedule.by_team(test_team)
   puts "Schedule for team ##{test_team.to_s}"
