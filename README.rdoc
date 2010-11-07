@@ -16,24 +16,43 @@ for this round on the next gameday and will start a new round right after.
   gem install rrschedule (not on gemcutter yet... hold on)
   require 'rrschedule.rb'
 
-== Generate the schedule
+== Prepare the schedule
   Time.zone = "America/New_York"
-  teams = ["Rockets","Jetpacks","Snakes","Cobras","Wolves","Huskies","Tigers","Lions","Moose","Sprinklers","Pacers","Cyclops","Munchkins","Magicians","French Fries"]
+  teams = ["Rockets","Jetpacks","Snakes","Cobras","Wolves","Huskies","Tigers","Lions",
+           "Moose","Sprinklers","Pacers","Cyclops","Munchkins","Magicians","French Fries"]
+           
   schedule=RRSchedule::Schedule.new(
-                                  :teams => teams,  #array of teams that will compete against each other in the season (can be any kind of object)
-                                  :playing_surfaces => ["A","B","C","D"], #list of available playing surfaces (volleyball fields, curling sheets, tennis courts, etc)
-                                  :wdays => [3], #day(s) of the week where games are played
-                                  :start_date => Time.zone.parse("2010/10/13"), #Season will start on...                
-                                  :exclude_dates => [ #array of dates WITHOUT games
+                                  #array of teams that will compete against each other in the season
+                                  :teams => teams,  
+                                  
+                                  #list of available playing surfaces (volleyball fields, curling sheets, tennis courts, etc)
+                                  :playing_surfaces => ["A","B","C","D"],
+                                  
+                                  #day(s) of the week where games are played
+                                  :wdays => [3],
+                                  
+                                  #Season will start on...                
+                                  :start_date => Time.zone.parse("2010/10/13"),
+                                  
+                                  #array of dates WITHOUT games
+                                  :exclude_dates => [
                                                       Time.zone.parse("2010/11/24"),
                                                       Time.zone.parse("2010/12/15"),
                                                       Time.zone.parse("2010/12/22"),
                                                       Time.zone.parse("2010/12/29")
                                                     ],
-                                  :cycles => 1, #1 for Round Robin, 2 for Double Round Robin and so on
-                                  :shuffle_initial_order => true, #Shuffle team order before each cycle
-                                  :game_times => ["10:00 AM", "1:00 PM"] #Times of the day where the games are played
+                                                    
+                                  #1 for Round Robin, 2 for Double Round Robin and so on
+                                  :cycles => 1,
+                                  
+                                  #Shuffle team order before each cycle
+                                  :shuffle_initial_order => true,
+                                  
+                                  #Times of the day where the games are played
+                                  :game_times => ["10:00 AM", "1:00 PM"]
                                 )
+
+== Generate the schedule
   res=schedule.generate
   
 == Playing with the output
