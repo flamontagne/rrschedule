@@ -10,7 +10,14 @@ module RRSchedule
     attr_reader :teams, :rounds
 
     def initialize(params={})
-      store_params(params)
+      self.teams = params[:teams] || [1,2,3,4,5]
+      self.playing_surfaces = params[:playing_surfaces] || ["--"]
+      self.cycles = params[:cycles] || 1
+      self.game_times = params[:game_times] || ["7:00 PM"]
+      self.shuffle_initial_order = params[:shuffle_initial_order] || true
+      self.exclude_dates = params[:exclude_dates] || []
+      self.start_date = params[:start_date] || Time.now.beginning_of_day
+      self.wdays = Array(params[:wdays]).empty? ? [1] : Array(params[:wdays])
     end
     
         
@@ -137,19 +144,6 @@ module RRSchedule
     def games_per_day
       self.playing_surfaces.size * self.game_times.size
     end
-
-    def store_params(params)
-      self.teams = params[:teams] if params[:teams].respond_to?(:to_ary)
-      self.playing_surfaces = params[:playing_surfaces] if params[:playing_surfaces].respond_to?(:to_ary)      
-      self.cycles = params[:cycles] if params[:cycles].respond_to?(:to_int)
-      self.game_times = params[:game_times] if params[:game_times].respond_to?(:to_ary)
-      self.shuffle_initial_order = params[:shuffle_initial_order]
-      self.exclude_dates = params[:exclude_dates] || []
-      self.start_date = params[:start_date] || Time.now.beginning_of_day
-      self.wdays = Array(params[:wdays]) if params[:wdays].respond_to?(:to_ary) || params[:wdays].respond_to?(:to_int)      
-    end
-    
-    
   end  
   
   class Game
