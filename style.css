@@ -25,3 +25,6 @@ a:active, a:hover {
   margin-left:210px;
 }
 
+p.smaller {
+  font-size:85%;
+}
