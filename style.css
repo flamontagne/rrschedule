@@ -1,4 +1,21 @@
 body {
   margin:2em auto;
   width:1009px;
+  font-family:arial;
+  font-size:16px;
+  color:#222;
+}
+
+
+.highlight {
+  color:#bf510c;
+}
+
+a, a:visited {
+  color:#bf510c;
+  text-decoration:none;
+}
+
+a:active, a:hover {
+  text-decoration:underline;
 }
