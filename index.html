@@ -12,14 +12,13 @@
     <pre>
       gem install rrschedule
       
+      require 'rrschedule.rb'
       schedule = RRSchedule::Schedule.new(
         :teams => ["Jazz","Rocks","Chargers","Sprinklers","Pacers","Magicians","Ferrets","Munchkins"],
         :playing_surfaces => ["Big court", "Small court"],
         :game_times => ["5:00 PM","7:00 PM"],
-        :cycles => 1,
-        :shuffle_initial_order => true,
-        :start_date => Date.today, 
-        :wdays => [3] #games are played on wednesdays...
+        :wdays => [3], #games are played on wednesdays...
+        :start_date => Date.today
       )
       
       schedule.generate
