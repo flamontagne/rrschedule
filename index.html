@@ -10,14 +10,14 @@
     
         <div class="content">
           <h1><span class='highlight'>RRS</span>chedule</h1>
-          <h2>A gem for ruby that makes it easier to generate Round-Robin schedules</h2>
+          <h2>A ruby gem that makes it easier to generate Round-Robin schedules</h2>
           
           <pre>
             gem install rrschedule
             
             require 'rrschedule.rb'
             schedule = RRSchedule::Schedule.new(
-              :teams => ["Jazz","Rocks","Chargers","Sprinklers","Pacers"],
+              :teams => %w(a b c d e f g h i j k l m n o p q r s),
               :playing_surfaces => ["Big court", "Small court"],
               :game_times => ["5:00 PM","7:00 PM"],
               :wdays => [3], #games are played on wednesdays...
