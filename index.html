@@ -5,36 +5,44 @@
     <link href="style.css" media="screen" rel="stylesheet" type="text/css" /> 
   </head>
   <body>
-    <h1><span class='highlight'>RRS</span>chedule</h1>
-    
-    <h2>A gem for ruby that makes it easier to generate Round-Robin schedules</h2>
-    
-    <pre>
-      gem install rrschedule
-      
-      require 'rrschedule.rb'
-      schedule = RRSchedule::Schedule.new(
-        :teams => ["Jazz","Rocks","Chargers","Sprinklers","Pacers","Magicians","Ferrets","Munchkins"],
-        :playing_surfaces => ["Big court", "Small court"],
-        :game_times => ["5:00 PM","7:00 PM"],
-        :wdays => [3], #games are played on wednesdays...
-        :start_date => Date.today
-      )
-      
-      schedule.generate
-      
-      #human readable schedule
-      puts schedule.to_s
-      
-      #Or, if you want to loop through the schedule...
-      schedule.gamedays.each do |gd,games|
-        #...        
-        games.each do |game|
-          #...
-        end
-      end
-    </pre>
 
-    See <a href="http://github.com/flamontagne/rrschedule">github page</a> for more info.
+    <div id="container">
+    
+        <div class="content">
+          <h1><span class='highlight'>RRS</span>chedule</h1>
+          <h2>A gem for ruby that makes it easier to generate Round-Robin schedules</h2>
+          
+          <pre>
+            gem install rrschedule
+            
+            require 'rrschedule.rb'
+            schedule = RRSchedule::Schedule.new(
+              :teams => ["Jazz","Rocks","Chargers","Sprinklers","Pacers"],
+              :playing_surfaces => ["Big court", "Small court"],
+              :game_times => ["5:00 PM","7:00 PM"],
+              :wdays => [3], #games are played on wednesdays...
+              :start_date => Date.today
+            )
+            
+            schedule.generate
+            
+            #human readable schedule
+            puts schedule.to_s
+            
+            #Or, if you want to loop through the schedule...
+            schedule.gamedays.each do |gd,games|
+              #...        
+              games.each do |game|
+                #...
+              end
+            end
+          </pre>
+
+          See <a href="http://github.com/flamontagne/rrschedule">github page</a> for more info.        	
+
+        </div>
+  
+    </div>
+
   </body>
 </html>

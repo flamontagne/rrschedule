@@ -1,11 +1,10 @@
 body {
-  margin:2em auto;
-  width:1009px;
   font-family:arial;
   font-size:16px;
-  color:#222;
+  color:#444;
   background:url('logo.jpg') no-repeat;
 }
+
 
 
 .highlight {
@@ -20,3 +19,9 @@ a, a:visited {
 a:active, a:hover {
   text-decoration:underline;
 }
+
+
+#container {
+  margin-left:210px;
+}
+
