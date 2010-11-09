@@ -95,9 +95,13 @@ and will start a new round right after.
     puts "\n"
   end
   
-== Other
+== Issues / Other
+
+Playing surfaces and game times need to be distributed evenly among all competitors. At the moment
+the same teams will play on the same surfaces and at the same game times most of the time.
+Note that it only happens when a full round can be completed on a single gameday. Otherwise there will
+be a natural rotation and teams will play on different surfaces and at different times between gamedays.
 
 Hope this gem will be useful to some people!
-As you can see, there are no tests yet but they should come quite soon.
 
 You can read my blog here: www.rubyfleebie.com
