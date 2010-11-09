@@ -36,9 +36,7 @@
               :game_times => ["5:00 PM","7:00 PM"],
               :wdays => [3], #games are played on wednesdays...
               :start_date => Date.today
-            )
-            
-            schedule.generate
+            ).generate
             
             #human readable schedule
             puts schedule.to_s
