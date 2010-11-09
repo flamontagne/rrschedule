@@ -9,10 +9,10 @@ module RRSchedule
 
     def initialize(params={})
       self.teams = params[:teams] || [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-      self.playing_surfaces = Array(params[:playing_surfaces]).empty? ? ["Default Surface"] : Array(params[:playing_surfaces])
+      self.playing_surfaces = Array(params[:playing_surfaces]).empty? ? ["Surface A", "Surface B"] : Array(params[:playing_surfaces])
       self.cycles = params[:cycles] || 1
       
-      self.game_times = Array(params[:game_times]).empty? ? ["7:00 PM"] : Array(params[:game_times])
+      self.game_times = Array(params[:game_times]).empty? ? ["7:00 PM", "9:00 PM"] : Array(params[:game_times])
       self.game_times.collect! do |gt| 
         begin
           DateTime.parse(gt) 
