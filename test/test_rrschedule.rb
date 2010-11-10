@@ -69,7 +69,7 @@ class TestRrschedule < Test::Unit::TestCase
       assert_equal ["the only one"], schedule.playing_surfaces
     end
     
-    should "have at least one team specified" do
+    should "have at least two teams" do
       assert_raise RuntimeError do
         schedule = RRSchedule::Schedule.new(:teams => [1])      
       end
@@ -94,7 +94,7 @@ class TestRrschedule < Test::Unit::TestCase
       assert @s.round_robin?
     end
     
-    should "not have any :dummy teams in the schedule" do
+    should "not have any :dummy teams in the final schedule" do
       assert @s.gamedays.collect{|gd,games| games}.flatten.select{
         |g| [g.team_a,g.team_b].include?(:dummy)
       }.size == 0
@@ -114,7 +114,7 @@ class TestRrschedule < Test::Unit::TestCase
       assert @s.round_robin?
     end
     
-    should "not have any :dummy teams in the schedule" do
+    should "not have any :dummy teams in the final schedule" do
       assert @s.gamedays.collect{|gd,games| games}.flatten.select{
         |g| [g.team_a,g.team_b].include?(:dummy)
       }.size == 0
