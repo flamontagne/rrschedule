@@ -21,7 +21,7 @@ module RRSchedule
         end
       end
       
-      self.shuffle_initial_order = params[:shuffle_initial_order] || true
+      self.shuffle_initial_order = params[:shuffle_initial_order].nil? ? true : params[:shuffle_initial_order]
       self.exclude_dates = params[:exclude_dates] || []
       self.start_date = params[:start_date] || Time.now.beginning_of_day
       self.wdays = Array(params[:wdays]).empty? ? [1] : Array(params[:wdays])
@@ -107,17 +107,17 @@ module RRSchedule
       @schedule.sort
     end        
     
-    def by_team(team)
+    #TODO: should return either a Schedule instance or a TeamSchedule instance (this class doesn't exist yet)
+    def by_team(team)      
       gms=[]
       self.gamedays.each do |gd,games|
-        gms << games.select{|g| g.team_a == team || g.team_b == team}
+        gms << games.select{|g| g.team_a == team || g.team_b == team}                
       end
       gms.flatten
     end
 
-    #TODO: returns true if the generated schedule is a valid round-robin (for testing purpose)
-    def round_robin?
-    
+    #returns true if the generated schedule is a valid round-robin (for testing purpose)
+    def round_robin?    
       #each round-robin round should contains n-1 games where n is the nbr of teams (:dummy included if odd)
       return false if self.rounds.size != (@teams.size*self.cycles)-self.cycles
       
@@ -130,24 +130,23 @@ module RRSchedule
       return true
     end
     
-    private  
-
     def teams=(arr)
       @teams = arr.clone
       raise ":dummy is a reserved team name. Please use something else" if @teams.member?(:dummy)
       raise "at least 2 teams are required" if @teams.size == 1   
       @teams << :dummy if @teams.size.odd?
     end
-    
-    #Let's slice our games according to our physical constraints
+        
+    private      
+    #Slice games according to playing surfaces and game times
     def slice(games)
       res={}    
       slices = games.each_slice(games_per_day)
       wdays_stack = self.wdays.clone     
       cur_date = self.start_date
       slices.each_with_index do |slice,i|
-        gt_stack = self.game_times.clone
-        ps_stack = self.playing_surfaces.clone
+        gt_stack = self.game_times.clone.sort_by{rand}
+        ps_stack = self.playing_surfaces.clone.sort_by{rand}
         wdays_stack = self.wdays.clone if wdays_stack.empty?
 
         cur_wday = wdays_stack.shift        
