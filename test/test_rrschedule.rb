@@ -15,7 +15,7 @@ class TestRrschedule < Test::Unit::TestCase
       assert schedule.exclude_dates.empty?
     end
     
-    should "have a dummy team when team number is odd" do
+    should "have a dummy team when number of teams is odd" do
       schedule = RRSchedule::Schedule.new(
         :teams => Array(1..9)
       )
@@ -24,7 +24,7 @@ class TestRrschedule < Test::Unit::TestCase
       assert schedule.teams.member?(:dummy), "There should always be a :dummy team when the nbr of teams is odd"
     end
     
-    should "not have a dummy team when team number is even" do
+    should "not have a dummy team when number of teams is even" do
       schedule = RRSchedule::Schedule.new(
         :teams => Array(1..6)
       )
@@ -81,6 +81,25 @@ class TestRrschedule < Test::Unit::TestCase
     end    
   end
   
+  context "Any valid schedule" do
+    setup do
+      @s = RRSchedule::Schedule.new(
+        :teams => %w(a b c d e f g h i j l m),
+        :playing_surfaces => %w(one two),
+        :game_times => ["10:00 AM", "13:00 PM"]
+      )
+    end
+    
+    should "have gamedays that respect the wdays attribute" do
+      @s.wdays = [3,5]
+      @s.generate
+
+      @s.gamedays.each do |gd,games|
+        assert [3,5].include?(gd.wday), "wday is #{gd.wday.to_s} but should be 3 or 5"
+      end
+    end
+  end  
+  
   context "A generated schedule with an odd number of teams" do
     setup do
       @s = RRSchedule::Schedule.new(
@@ -118,6 +137,6 @@ class TestRrschedule < Test::Unit::TestCase
       assert @s.gamedays.collect{|gd,games| games}.flatten.select{
         |g| [g.team_a,g.team_b].include?(:dummy)
       }.size == 0
-    end
-  end  
+    end    
+  end    
 end
