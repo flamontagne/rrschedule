@@ -27,8 +27,7 @@
           <h2>A ruby gem that makes it easier to generate Round-Robin schedules</h2>
           
           <pre>
-            gem install rrschedule
-            
+            gem install rrschedule            
             require 'rrschedule'
             schedule = RRSchedule::Schedule.new(
               :teams => %w(a b c d e f g h i j k l m n o p q r s),
@@ -42,9 +41,9 @@
             puts schedule.to_s
             
             #Or, if you want to loop through the schedule...
-            schedule.gamedays.each do |gd,games|
+            schedule.gamedays.each do |gd|
               #...        
-              games.each do |game|
+              gd.games.each do |game|
                 #...
               end
             end
