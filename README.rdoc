@@ -60,12 +60,12 @@ and will start a new round right after.
 === human readable schedule
   puts schedule.to_s
 
-=== Round by round... without the schedule info
-  #If you have an ODD number of teams you will see a "dummy" opponent in each round
-  schedule.rounds.each do |round|
-    puts "Round ##{round.round}"
-    round.games.each do |g|
-      puts g.team_a.to_s + " Vs " + g.team_b.to_s
+=== Iterate through schedule
+  schedule.gamedays.each do |gd|
+    puts gd.date
+    puts "===================="
+    gd.games.each do |g|
+      puts g.team_a.to_s + " Vs " + g.team_b.to_s + " on playing surface ##{g.playing_surface} at #{g.game_time}"     
     end
     puts "\n"
   end
@@ -85,22 +85,37 @@ and will start a new round right after.
     puts g.game_date.to_s + " on playing surface " + g.playing_surface.to_s + " at " + g.game_time.to_s
   end
 
-=== Iterate through schedule
-  schedule.gamedays.each do |gd|
-    puts gd.date
-    puts "===================="
-    gd.games.each do |g|
-      puts g.team_a.to_s + " Vs " + g.team_b.to_s + " on playing surface ##{g.playing_surface} at #{g.game_time}"     
+=== Each round of the roun-robin without any date/time or playing location info
+  #If you have an ODD number of teams you will see a "dummy" opponent in each round
+  schedule.rounds.each do |round|
+    puts "Round ##{round.round}"
+    round.games.each do |g|
+      puts g.team_a.to_s + " Vs " + g.team_b.to_s
     end
     puts "\n"
   end
   
 == Issues / Other
 
-Playing surfaces and game times need to be distributed evenly among all competitors. At the moment
-the same teams will play on the same surfaces and at the same game times most of the time.
-Note that it only happens when a full round can be completed on a single gameday. Otherwise there will
-be a natural rotation and teams will play on different surfaces and at different times between gamedays.
+Starting from version 0.1.5, calling Schedule#gamedays will returns an array of Gameday instances.
+If you upgrade to this version you will need to change your code accordingly.
+
+  #this won't work anymore
+  schedule.gamedays.each do |gd,games|
+      gd #this was a date
+      
+      games.each do |g|
+      end
+      #...
+  end
+  
+  #do this instead
+  schedule.gamedays.each do |gd|
+    gd.games.each do |g|
+    end
+    #...
+  end
+
 
 Hope this gem will be useful to some people!
 
