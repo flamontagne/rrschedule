@@ -102,7 +102,7 @@ If you upgrade to this version you will need to change your code accordingly.
 
   #this won't work anymore
   schedule.gamedays.each do |gd,games|
-      gd #this was a date
+      puts gd
       
       games.each do |g|
       end
@@ -111,6 +111,7 @@ If you upgrade to this version you will need to change your code accordingly.
   
   #do this instead
   schedule.gamedays.each do |gd|
+    puts gd.date
     gd.games.each do |g|
     end
     #...
