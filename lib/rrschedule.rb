@@ -1,7 +1,7 @@
 # rrschedule (Round Robin Schedule generator)
 # Auhtor: François Lamontagne
 ############################################################################################################################
-require 'active_support'
+require 'active_support/all'
 module RRSchedule
   class Schedule
     attr_accessor :playing_surfaces, :game_times, :cycles, :wdays, :start_date, :exclude_dates, :shuffle_initial_order
