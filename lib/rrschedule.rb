@@ -5,15 +5,16 @@ require 'active_support'
 module RRSchedule
   class Schedule
     attr_accessor :playing_surfaces, :game_times, :cycles, :wdays, :start_date, :exclude_dates, :shuffle_initial_order
-    attr_reader :teams, :rounds
+    attr_reader :teams, :rounds, :gamedays
 
     def initialize(params={})
+      @gamedays = []
       self.teams = params[:teams] || [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
       self.playing_surfaces = Array(params[:playing_surfaces]).empty? ? ["Surface A", "Surface B"] : Array(params[:playing_surfaces])
       self.cycles = params[:cycles] || 1
       
       self.game_times = Array(params[:game_times]).empty? ? ["7:00 PM", "9:00 PM"] : Array(params[:game_times])
-      self.game_times.collect! do |gt| 
+      self.game_times.collect! do |gt|
         begin
           DateTime.parse(gt) 
         rescue
@@ -83,35 +84,31 @@ module RRSchedule
 
     def face_to_face(team_a,team_b)
       res=[]
-      self.gamedays.each do |gd,games|
-        res << games.select {|g| (g.team_a == team_a && g.team_b == team_b) || (g.team_a == team_b && g.team_b == team_a)}
+      self.gamedays.each do |gd|
+        res << gd.games.select {|g| (g.team_a == team_a && g.team_b == team_b) || (g.team_a == team_b && g.team_b == team_a)}
       end
       res.flatten
     end
     
     def to_s
       res = ""
-      res << "#{@schedule.keys.size.to_s} gamedays\n"    
-      @schedule.sort.each do |gd,games|
-        res << gd.strftime("%Y-%m-%d") + "\n"
+      res << "#{self.gamedays.size.to_s} gamedays\n"    
+      self.gamedays.each do |gd|
+        res << gd.date.strftime("%Y-%m-%d") + "\n"
         res << "==========\n"
-        games.each do |g|
+        gd.games.each do |g|
           res << "#{g.team_a.to_s} VS #{g.team_b.to_s} on playing surface #{g.playing_surface} at #{g.game_time.strftime("%I:%M %p")}\n"
         end
         res << "\n"
       end
       res
     end
-    
-    def gamedays
-      @schedule.sort
-    end        
-    
+            
     #TODO: should return either a Schedule instance or a TeamSchedule instance (this class doesn't exist yet)
     def by_team(team)      
       gms=[]
-      self.gamedays.each do |gd,games|
-        gms << games.select{|g| g.team_a == team || g.team_b == team}                
+      self.gamedays.each do |gd|
+        gms << gd.games.select{|g| g.team_a == team || g.team_b == team}                
       end
       gms.flatten
     end
@@ -140,7 +137,6 @@ module RRSchedule
     private      
     #Slice games according to playing surfaces and game times
     def slice(games)
-      res={}    
       slices = games.each_slice(games_per_day)
       wdays_stack = self.wdays.clone     
       cur_date = self.start_date
@@ -153,24 +149,26 @@ module RRSchedule
         cur_date = next_game_date(cur_date,cur_wday)
         cur_gt = gt_stack.shift
         
-        res[cur_date] = []
+        gameday = Gameday.new(:date => cur_date)
+        
         slice.each_with_index do |g,game_index|          
           cur_ps = ps_stack.shift
-          res[cur_date] << Game.new(
+          gameday.games << Game.new(
                             :team_a => g[:team_a], 
                             :team_b => g[:team_b], 
                             :playing_surface => cur_ps, 
                             :game_time => cur_gt, 
                             :game_date => cur_date)
+          
           cur_gt = gt_stack.shift if ps_stack.empty?            
           gt_stack = self.game_times.clone if gt_stack.empty?          
           ps_stack = self.playing_surfaces.clone if ps_stack.empty?                              
         end
         
-        res[cur_date] = res[cur_date].sort_by {|g| [g.game_time,g.playing_surface]}
+        gameday.games = gameday.games.sort_by {|g| [g.game_time,g.playing_surface]}
+        self.gamedays << gameday
         cur_date += 1.day
       end
-      @schedule = res        
     end
     
     def next_game_date(dt,wday)
@@ -182,7 +180,17 @@ module RRSchedule
       self.playing_surfaces.size * self.game_times.size
     end
   end  
-  
+
+  class Gameday
+    attr_accessor :date, :games
+    
+    def initialize(params)
+      self.date = params[:date]
+      self.games = params[:games] || []
+    end
+    
+  end
+    
   class Game
     attr_accessor :team_a, :team_b, :playing_surface, :game_time, :game_date
     
@@ -200,7 +208,7 @@ module RRSchedule
     
     def initialize(params={})
       self.round = params[:round]
-      self.games = params[:games]
+      self.games = params[:games] || []
     end
   end
 end

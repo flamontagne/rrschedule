@@ -94,8 +94,8 @@ class TestRrschedule < Test::Unit::TestCase
       @s.wdays = [3,5]
       @s.generate
 
-      @s.gamedays.each do |gd,games|
-        assert [3,5].include?(gd.wday), "wday is #{gd.wday.to_s} but should be 3 or 5"
+      @s.gamedays.each do |gd|
+        assert [3,5].include?(gd.date.wday), "wday is #{gd.date.wday.to_s} but should be 3 or 5"
       end
     end
   end  
@@ -114,7 +114,7 @@ class TestRrschedule < Test::Unit::TestCase
     end
     
     should "not have any :dummy teams in the final schedule" do
-      assert @s.gamedays.collect{|gd,games| games}.flatten.select{
+      assert @s.gamedays.collect{|gd| gd.games}.flatten.select{
         |g| [g.team_a,g.team_b].include?(:dummy)
       }.size == 0
     end
@@ -134,7 +134,7 @@ class TestRrschedule < Test::Unit::TestCase
     end
     
     should "not have any :dummy teams in the final schedule" do
-      assert @s.gamedays.collect{|gd,games| games}.flatten.select{
+      assert @s.gamedays.collect{|gd| gd.games}.flatten.select{
         |g| [g.team_a,g.team_b].include?(:dummy)
       }.size == 0
     end    
