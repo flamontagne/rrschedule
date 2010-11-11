@@ -42,8 +42,9 @@
             
             #Or, if you want to loop through the schedule...
             schedule.gamedays.each do |gd|
-              #...        
+              puts gd.date              
               gd.games.each do |game|
+                puts "#{game.team_a} Vs #{game.team_b}"
                 #...
               end
             end
