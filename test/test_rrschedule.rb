@@ -79,6 +79,13 @@ class TestRrschedule < Test::Unit::TestCase
       schedule = RRSchedule::Schedule.new
       assert schedule.teams.size > 1
     end    
+    
+    should "not have a team that is specified twice" do
+      assert_raise RuntimeError do
+        schedule = RRSchedule::Schedule.new(:teams => %w(a a b c d e f g h i))
+      end
+      
+    end    
   end
   
   context "Any valid schedule" do

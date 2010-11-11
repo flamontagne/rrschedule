@@ -6,7 +6,7 @@ module RRSchedule
   class Schedule
     attr_accessor :playing_surfaces, :game_times, :cycles, :wdays, :start_date, :exclude_dates, :shuffle_initial_order
     attr_reader :teams, :rounds, :gamedays
-
+    
     def initialize(params={})
       @gamedays = []
       self.teams = params[:teams] || [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
@@ -31,18 +31,17 @@ module RRSchedule
       self
     end
     
-        
+    #TODO: consider refactoring with a recursive algorithm
     def generate(params={})
       @teams = @teams.sort_by{rand} if self.shuffle_initial_order
       initial_order = @teams.clone
-      current_cycle = 0
-      current_round = 0
+      current_cycle = current_round = 0
       all_games = []      
-
+            
       #Loop start here
       begin
         games = []
-        t = @teams.clone
+        t = @teams.clone        
         while !t.empty? do
           team_a = t.shift
           team_b = t.reverse!.shift
@@ -50,8 +49,9 @@ module RRSchedule
           games << {:team_a => team_a, :team_b => team_b}
           all_games << {:team_a => team_a, :team_b => team_b}
         end
-        #round completed
-        current_round += 1
+                
+        current_round += 1 #round completed
+        
         @rounds ||= []
         @rounds << Round.new( 
                     :round => current_round,
@@ -76,12 +76,12 @@ module RRSchedule
           end
         end
       end until @teams == initial_order && current_cycle==self.cycles
-      #@teams.delete(:dummy)
+
       slice(all_games)
       self
     end
 
-
+    #returns an array of Game instances where team_a and team_b are facing each other
     def face_to_face(team_a,team_b)
       res=[]
       self.gamedays.each do |gd|
@@ -90,6 +90,7 @@ module RRSchedule
       res.flatten
     end
     
+    #human readable schedule
     def to_s
       res = ""
       res << "#{self.gamedays.size.to_s} gamedays\n"    
@@ -97,14 +98,14 @@ module RRSchedule
         res << gd.date.strftime("%Y-%m-%d") + "\n"
         res << "==========\n"
         gd.games.each do |g|
-          res << "#{g.team_a.to_s} VS #{g.team_b.to_s} on playing surface #{g.playing_surface} at #{g.game_time.strftime("%I:%M %p")}\n"
+          res << "#{g.ta.to_s} VS #{g.tb.to_s} on playing surface #{g.ps} at #{g.gt.strftime("%I:%M %p")}\n"
         end
         res << "\n"
       end
       res
     end
-            
-    #TODO: should return either a Schedule instance or a TeamSchedule instance (this class doesn't exist yet)
+
+    #return an array of Game instances where 'team' is playing            
     def by_team(team)      
       gms=[]
       self.gamedays.each do |gd|
@@ -130,7 +131,8 @@ module RRSchedule
     def teams=(arr)
       @teams = arr.clone
       raise ":dummy is a reserved team name. Please use something else" if @teams.member?(:dummy)
-      raise "at least 2 teams are required" if @teams.size == 1   
+      raise "at least 2 teams are required" if @teams.size == 1
+      raise "teams have to be unique" if @teams.uniq.size < @teams.size  
       @teams << :dummy if @teams.size.odd?
     end
         
@@ -193,6 +195,11 @@ module RRSchedule
     
   class Game
     attr_accessor :team_a, :team_b, :playing_surface, :game_time, :game_date
+    alias :ta :team_a
+    alias :tb :team_b
+    alias :ps :playing_surface
+    alias :gt :game_time
+    alias :gd :game_date
     
     def initialize(params={})
       self.team_a = params[:team_a]
