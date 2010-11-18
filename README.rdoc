@@ -12,6 +12,9 @@ impossible to complete one round in a single day. So rrschedule will put the rem
 and will start a new round right after.
 
 
+== Demo
+Online round-robin generator using RRSchedule: http://rrschedule.azanka.ca
+
 == Installation
   gem install rrschedule
   require 'rrschedule'

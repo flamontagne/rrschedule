@@ -4,7 +4,7 @@
 require 'active_support/all'
 module RRSchedule
   class Schedule
-    attr_accessor :playing_surfaces, :game_times, :cycles, :wdays, :start_date, :exclude_dates, :shuffle_initial_order
+    attr_accessor :playing_surfaces, :game_times, :cycles, :wdays, :start_date, :exclude_dates, :shuffle_initial_order, :optimize
     attr_reader :teams, :rounds, :gamedays
     
     def initialize(params={})
@@ -22,6 +22,10 @@ module RRSchedule
         end
       end
       
+      #optimize to true will fill all the available playing surfaces and game times for a given gameday no matter if
+      #one team has to play several games on the same gameday. optimize to false make sure that teams cannot play
+      #more than one game per day. 
+      self.optimize = params[:optimize].nil? ? true : params[:optimize]      
       self.shuffle_initial_order = params[:shuffle_initial_order].nil? ? true : params[:shuffle_initial_order]
       self.exclude_dates = params[:exclude_dates] || []
       self.start_date = params[:start_date] || Time.now.beginning_of_day
@@ -33,6 +37,8 @@ module RRSchedule
     
     #TODO: consider refactoring with a recursive algorithm
     def generate(params={})
+      @gamedays = []
+      @rounds = []
       @teams = @teams.sort_by{rand} if self.shuffle_initial_order
       initial_order = @teams.clone
       current_cycle = current_round = 0
@@ -179,7 +185,11 @@ module RRSchedule
     end
     
     def games_per_day
-      self.playing_surfaces.size * self.game_times.size
+      if self.teams.size/2 >= (self.playing_surfaces.size * self.game_times.size)
+        (self.playing_surfaces.size * self.game_times.size)
+      else
+        self.optimize ? (self.playing_surfaces.size * self.game_times.size) : self.teams.size/2
+      end
     end
   end  
 
