@@ -20,7 +20,6 @@ Online round-robin generator using RRSchedule: http://rrschedule.azanka.ca
   require 'rrschedule'
 
 == Prepare the schedule
-  Time.zone = "America/New_York"
   teams = ["Rockets","Jetpacks","Snakes","Cobras","Wolves","Huskies","Tigers","Lions",
            "Moose","Sprinklers","Pacers","Cyclops","Munchkins","Magicians","French Fries"]
            
@@ -35,14 +34,14 @@ Online round-robin generator using RRSchedule: http://rrschedule.azanka.ca
                                   :wdays => [3],
                                   
                                   #Season will start on...                
-                                  :start_date => Time.zone.parse("2010/10/13"),
+                                  :start_date => Date.parse("2010/10/13"),
                                   
                                   #array of dates WITHOUT games
                                   :exclude_dates => [
-                                                      Time.zone.parse("2010/11/24"),
-                                                      Time.zone.parse("2010/12/15"),
-                                                      Time.zone.parse("2010/12/22"),
-                                                      Time.zone.parse("2010/12/29")
+                                                      Date.parse("2010/11/24"),
+                                                      Date.parse("2010/12/15"),
+                                                      Date.parse("2010/12/22"),
+                                                      Date.parse("2010/12/29")
                                                     ],
                                                     
                                   #1 for Round Robin, 2 for Double Round Robin and so on. Default is 1
@@ -65,10 +64,10 @@ Online round-robin generator using RRSchedule: http://rrschedule.azanka.ca
 
 === Iterate through schedule
   schedule.gamedays.each do |gd|
-    puts gd.date
+    puts gd.date.strftime("%Y/%m/%d")
     puts "===================="
     gd.games.each do |g|
-      puts g.team_a.to_s + " Vs " + g.team_b.to_s + " on playing surface ##{g.playing_surface} at #{g.game_time}"     
+      puts g.team_a.to_s + " Vs " + g.team_b.to_s + " on playing surface ##{g.playing_surface} at #{g.game_time.strftime("%I:%M %p")}"     
     end
     puts "\n"
   end
@@ -78,14 +77,14 @@ Online round-robin generator using RRSchedule: http://rrschedule.azanka.ca
   games=schedule.by_team(test_team)
   puts "Schedule for team ##{test_team.to_s}"
   games.each do |g|
-    puts "#{g.game_date.strftime("%Y-%m-%d")}: against #{g.team_a == test_team ? g.team_b.to_s : g.team_a.to_s} on playing surface ##{g.playing_surface} at #{g.game_time}"     
+    puts "#{g.game_date.strftime("%Y-%m-%d")}: against #{g.team_a == test_team ? g.team_b.to_s : g.team_a.to_s} on playing surface ##{g.playing_surface} at #{g.game_time.strftime("%I:%M %p")}"     
   end
 
 === Face to Face
   games=schedule.face_to_face("Lions","Moose")
   puts "FACE TO FACE: Lions Vs Moose"
   games.each do |g|
-    puts g.game_date.to_s + " on playing surface " + g.playing_surface.to_s + " at " + g.game_time.to_s
+    puts g.game_date.strftime("%Y/%m/%d") + " on playing surface " + g.playing_surface.to_s + " at " + g.game_time.strftime("%I:%M %p")
   end
 
 === Each round of the roun-robin without any date/time or playing location info
