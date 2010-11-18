@@ -8,11 +8,10 @@ begin
     gem.summary = %Q{Round-Robin schedule generator}
     gem.description = %Q{This gem automate the process of creating a round-robin sport schedule.}
     gem.email = "flamontagne@azanka.ca"
-    gem.homepage = "http://github.com/flamontagne/rrschedule"
+    gem.homepage = "http://flamontagne.github.com/rrschedule"
     gem.authors = ["flamontagne"]
-    gem.add_dependency 'activesupport'
+    #gem.add_dependency 'activesupport'
     gem.add_development_dependency "thoughtbot-shoulda", ">= 0"
-    # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
   end
   Jeweler::GemcutterTasks.new
 rescue LoadError

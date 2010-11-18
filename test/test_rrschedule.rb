@@ -9,7 +9,7 @@ class TestRrschedule < Test::Unit::TestCase
       assert_equal 1, schedule.cycles
       assert schedule.game_times.respond_to?(:to_ary)
       assert schedule.playing_surfaces.respond_to?(:to_ary)
-      assert schedule.start_date.respond_to?(:to_date)
+      assert schedule.start_date.is_a?(Date)
       assert schedule.shuffle_initial_order
       assert schedule.optimize
       assert schedule.wdays.select{|w| (0..6).member? w} == schedule.wdays

@@ -1,40 +1,89 @@
 # rrschedule (Round Robin Schedule generator)
 # Auhtor: François Lamontagne
 ############################################################################################################################
-require 'active_support/all'
 module RRSchedule
   class Schedule
-    attr_accessor :playing_surfaces, :game_times, :cycles, :wdays, :start_date, :exclude_dates, :shuffle_initial_order, :optimize
-    attr_reader :teams, :rounds, :gamedays
+    attr_reader :playing_surfaces, :game_times, :cycles, :wdays, :start_date, :exclude_dates, 
+                :shuffle_initial_order, :optimize, :teams, :rounds, :gamedays
     
-    def initialize(params={})
-      @gamedays = []
-      self.teams = params[:teams] || [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-      self.playing_surfaces = Array(params[:playing_surfaces]).empty? ? ["Surface A", "Surface B"] : Array(params[:playing_surfaces])
-      self.cycles = params[:cycles] || 1
-      
-      self.game_times = Array(params[:game_times]).empty? ? ["7:00 PM", "9:00 PM"] : Array(params[:game_times])
-      self.game_times.collect! do |gt|
+    
+    #Array of teams that will compete against each other. You can pass it any kind of object
+    def teams=(arr)
+      @teams = arr ? arr.clone : [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+      raise ":dummy is a reserved team name. Please use something else" if @teams.member?(:dummy)
+      raise "at least 2 teams are required" if @teams.size == 1
+      raise "teams have to be unique" if @teams.uniq.size < @teams.size  
+      @teams << :dummy if @teams.size.odd?
+    end
+    
+    #Array of available playing surfaces. You can pass it any kind of object
+    def playing_surfaces=(ps)
+      @playing_surfaces = Array(ps).empty? ? ["Surface A", "Surface B"] : Array(ps)
+    end
+    
+    #Number of times each team plays against each other
+    def cycles=(cycles)
+      @cycles = cycles || 1
+    end
+    
+    #Array of game times where games are played. Must be valid DateTime objects in the string form
+    def game_times=(gt)
+      @game_times =  Array(gt).empty? ? ["7:00 PM", "9:00 PM"] : Array(gt)
+      @game_times.collect! do |gt|
         begin
           DateTime.parse(gt) 
         rescue
           raise "game times must be valid time representations in the string form (e.g. 3:00 PM, 11:00 AM, 18:20, etc)"
         end
-      end
-      
-      #optimize to true will fill all the available playing surfaces and game times for a given gameday no matter if
-      #one team has to play several games on the same gameday. optimize to false make sure that teams cannot play
-      #more than one game per day. 
-      self.optimize = params[:optimize].nil? ? true : params[:optimize]      
-      self.shuffle_initial_order = params[:shuffle_initial_order].nil? ? true : params[:shuffle_initial_order]
-      self.exclude_dates = params[:exclude_dates] || []
-      self.start_date = params[:start_date] || Time.now.beginning_of_day
-      self.wdays = Array(params[:wdays]).empty? ? [1] : Array(params[:wdays])
-      
-      raise "each value in wdays must be between 0 and 6" if self.wdays.reject{|w| (0..6).member?(w)}.size > 0
+      end      
+    end
+    
+    #Setting this to true will fill all the available playing surfaces and game times for a given gameday no matter if
+    #one team has to play several games on the same gameday. Setting it to false make sure that teams won't play
+    #more than one game per day. 
+    def optimize=(opt)
+      @optimize = opt.nil? ? true : opt
+    end
+    
+    #Shuffle the team order at the beginning of every cycles.
+    def shuffle_initial_order=(shuffle)
+      @shuffle_initial_order = shuffle.nil? ? true : shuffle
+    end
+    
+    #Array of dates without games
+    def exclude_dates=(dates)
+      @exclude_dates=dates || []
+    end
+    
+    #When the season starts? Since we generate the game dates based on weekdays, you need to pass it
+    #a start date in the correct timezone to get accurate game dates for the whole season. Otherwise
+    #you might
+    def start_date=(date)
+      @start_date=date || Date.today
+    end
+    
+    #Array of weekdays where games are played (0 is sunday)
+    def wdays=(wdays)
+      @wdays = Array(wdays).empty? ? [1] : Array(wdays)      
+      raise "each value in wdays must be between 0 and 6" if @wdays.reject{|w| (0..6).member?(w)}.size > 0
+    end
+    
+    def initialize(params={})
+      @gamedays = []
+      self.teams = params[:teams]
+      self.playing_surfaces = params[:playing_surfaces]
+      self.cycles = params[:cycles]      
+      self.game_times = params[:game_times]
+      self.optimize = params[:optimize]
+      self.shuffle_initial_order = params[:shuffle_initial_order]
+      self.exclude_dates = params[:exclude_dates]
+      self.start_date = params[:start_date]
+      self.wdays = params[:wdays] 
       self
     end
     
+    
+    #This will generate the schedule based on the various parameters
     #TODO: consider refactoring with a recursive algorithm
     def generate(params={})
       @gamedays = []
@@ -44,19 +93,22 @@ module RRSchedule
       current_cycle = current_round = 0
       all_games = []      
             
-      #Loop start here
+      #Cycle loop (A cycle is completed when every teams have played one game against each other)
       begin
         games = []
         t = @teams.clone        
+        
+        #Round loop
         while !t.empty? do
           team_a = t.shift
           team_b = t.reverse!.shift
           t.reverse!
-          games << {:team_a => team_a, :team_b => team_b}
-          all_games << {:team_a => team_a, :team_b => team_b}
+                    
+          matchup = {:team_a => team_a, :team_b => team_b}
+          games << matchup; all_games << matchup
         end
                 
-        current_round += 1 #round completed
+        current_round += 1
         
         @rounds ||= []
         @rounds << Round.new( 
@@ -133,17 +185,9 @@ module RRSchedule
       end
       return true
     end
-    
-    def teams=(arr)
-      @teams = arr.clone
-      raise ":dummy is a reserved team name. Please use something else" if @teams.member?(:dummy)
-      raise "at least 2 teams are required" if @teams.size == 1
-      raise "teams have to be unique" if @teams.uniq.size < @teams.size  
-      @teams << :dummy if @teams.size.odd?
-    end
         
     private      
-    #Slice games according to playing surfaces and game times
+    #Slice games according to playing surfaces available and game times
     def slice(games)
       slices = games.each_slice(games_per_day)
       wdays_stack = self.wdays.clone     
@@ -175,15 +219,17 @@ module RRSchedule
         
         gameday.games = gameday.games.sort_by {|g| [g.game_time,g.playing_surface]}
         self.gamedays << gameday
-        cur_date += 1.day
+        cur_date += (60*60*24) 
       end
     end
     
+    #get the next gameday
     def next_game_date(dt,wday)
-      dt += 1.days until wday == dt.wday && !self.exclude_dates.include?(dt)
+      dt += (60*60*24) until wday == dt.wday && !self.exclude_dates.include?(dt)
       dt
     end
     
+    #how many games can we play per day? 
     def games_per_day
       if self.teams.size/2 >= (self.playing_surfaces.size * self.game_times.size)
         (self.playing_surfaces.size * self.game_times.size)
