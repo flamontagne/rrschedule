@@ -219,13 +219,13 @@ module RRSchedule
         
         gameday.games = gameday.games.sort_by {|g| [g.game_time,g.playing_surface]}
         self.gamedays << gameday
-        cur_date += (60*60*24) 
+        cur_date += 1
       end
     end
     
     #get the next gameday
     def next_game_date(dt,wday)
-      dt += (60*60*24) until wday == dt.wday && !self.exclude_dates.include?(dt)
+      dt += 1 until wday == dt.wday && !self.exclude_dates.include?(dt)
       dt
     end
     
