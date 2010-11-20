@@ -24,35 +24,35 @@ Online round-robin generator using RRSchedule: http://rrschedule.azanka.ca
            "Moose","Sprinklers","Pacers","Cyclops","Munchkins","Magicians","French Fries"]
            
   schedule=RRSchedule::Schedule.new(
-                                  #array of teams that will compete against each other in the season
-                                  :teams => teams,  
-                                  
-                                  #list of available playing surfaces (volleyball fields, curling sheets, tennis courts, etc)
-                                  :playing_surfaces => ["A","B","C","D"],
-                                  
-                                  #day(s) of the week where games are played
-                                  :wdays => [3],
-                                  
-                                  #Season will start on...                
-                                  :start_date => Date.parse("2010/10/13"),
-                                  
-                                  #array of dates WITHOUT games
-                                  :exclude_dates => [
-                                                      Date.parse("2010/11/24"),
-                                                      Date.parse("2010/12/15"),
-                                                      Date.parse("2010/12/22"),
-                                                      Date.parse("2010/12/29")
-                                                    ],
-                                                    
-                                  #1 for Round Robin, 2 for Double Round Robin and so on. Default is 1
-                                  :cycles => 1,
-                                  
-                                  #Shuffle team order before each cycle. Default is true
-                                  :shuffle_initial_order => true,
-                                  
-                                  #Times of the day where the games are played
-                                  :game_times => ["10:00 AM", "1:00 PM"]
-                                )
+    #array of teams that will compete against each other in the season
+    :teams => teams,  
+    
+    #list of available playing surfaces (volleyball fields, curling sheets, tennis courts, etc)
+    :playing_surfaces => ["A","B","C","D"],
+    
+    #day(s) of the week where games are played
+    :wdays => [3],
+    
+    #Season will start on...                
+    :start_date => Date.parse("2010/10/13"),
+    
+    #array of dates WITHOUT games
+    :exclude_dates => [
+                        Date.parse("2010/11/24"),
+                        Date.parse("2010/12/15"),
+                        Date.parse("2010/12/22"),
+                        Date.parse("2010/12/29")
+                      ],
+                      
+    #1 for Round Robin, 2 for Double Round Robin and so on. Default is 1
+    :cycles => 1,
+    
+    #Shuffle team order before each cycle. Default is true
+    :shuffle_initial_order => true,
+    
+    #Times of the day where the games are played
+    :game_times => ["10:00 AM", "1:00 PM"]
+  )
 
 == Generate the schedule
   schedule.generate
