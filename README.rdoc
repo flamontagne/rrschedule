@@ -38,11 +38,11 @@ Online round-robin generator using RRSchedule: http://rrschedule.azanka.ca
     
     #array of dates WITHOUT games
     :exclude_dates => [
-                        Date.parse("2010/11/24"),
-                        Date.parse("2010/12/15"),
-                        Date.parse("2010/12/22"),
-                        Date.parse("2010/12/29")
-                      ],
+      Date.parse("2010/11/24"),
+      Date.parse("2010/12/15"),
+      Date.parse("2010/12/22"),
+      Date.parse("2010/12/29")
+    ],
                       
     #1 for Round Robin, 2 for Double Round Robin and so on. Default is 1
     :cycles => 1,
