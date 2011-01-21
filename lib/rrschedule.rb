@@ -192,6 +192,24 @@ module RRSchedule
 #        [],
 #      ]
 
+      nbr_of_rounds = rounds.first.size
+      nbr_of_divisions = rounds.size
+      nbr_of_rounds.times do |round_id|
+        nbr_of_divisions.times do |division_id|
+          rounds[division_id][round_id].games.each do |game|
+            #Here we need to add each game at the correct place depending on the rules
+
+#            gameday.games << Game.new(
+#              :team_a => game.team_a,
+#              :team_b => game.team_b,
+#              :game_date => cur_date,
+#              :game_time => cur_gt,
+#              :playing_surface => cur_ps
+#            )
+          end
+        end
+      end
+
     end
 
     #get the next gameday
