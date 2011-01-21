@@ -16,20 +16,20 @@ This is why I had the idea of replacing the current "one size fits all" system w
 
 Thus, we will be able to have rules like:
 
-  Day of week | Game Time | playing surfaces   |
-  Monday      | 7:00PM    | Field #1, Field #2 |
-  Wednesday   | 7:00PM    | Field #1           |
-  Wednesday   | 9:00PM    | Field #1
+    Day of week | Game Time | playing surfaces   |
+    Monday      | 7:00PM    | Field #1, Field #2 |
+    Wednesday   | 7:00PM    | Field #1           |
+    Wednesday   | 9:00PM    | Field #1
 
 In the code it might look something like this:
 
-  schedule.rules << Rule.new(:wday => 1, :gt => "7:00PM", :ps => ["Field #1", "Field #2"])
-  schedule.rules << Rule.new(:wday => 3, :gt => "7:00PM", :ps => "Field #1")
-  schedule.rules << Rule.new(:wday => 3, :gt => "9:00PM", :ps => "Field #1")
+    schedule.rules << Rule.new(:wday => 1, :gt => "7:00PM", :ps => ["Field #1", "Field #2"])
+    schedule.rules << Rule.new(:wday => 3, :gt => "7:00PM", :ps => "Field #1")
+    schedule.rules << Rule.new(:wday => 3, :gt => "9:00PM", :ps => "Field #1")
 
-  schedule.generate
+    schedule.generate
 
-  ...
+    ...
 
 ### Multiple round-robins
 
@@ -43,13 +43,13 @@ game times.
 
 In other words, you will be able to do something like this:
 
-  schedule.teams = [
-    [A1,A2,A3,A4,A5,A6,A7,A8],
-    [B1,B2,B3,B4,B5,B6,B7,B8],
-    [C1,C2,C3,C4,C5,C6,C7,C8],
-    [D1,D2,D3,D4,D5,D6,D7,D8]
-  ]
+    schedule.teams = [
+      [A1,A2,A3,A4,A5,A6,A7,A8],
+      [B1,B2,B3,B4,B5,B6,B7,B8],
+      [C1,C2,C3,C4,C5,C6,C7,C8],
+      [D1,D2,D3,D4,D5,D6,D7,D8]
+    ]
 
-  schedule.rules << Rule.new(
-    ... #same rules apply for all 32 teams
-  )
+    schedule.rules << Rule.new(
+      ... #same rules apply for all 32 teams
+    )
