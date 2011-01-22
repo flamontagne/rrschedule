@@ -14,12 +14,22 @@ class TestRrschedule < Test::Unit::TestCase
     s.rules << RRSchedule::Rule.new(:wday => 4, :gt => ["7:00PM","9:00PM"], :ps => [1,2,3,4,5,6,7,8])
     s.rules << RRSchedule::Rule.new(:wday => 0, :gt => ["7:00PM"], :ps => [1,2,3,4])
     s.generate
-    puts s.to_s
+    s.rounds.each_with_index do |div_rounds,div_id|
+      puts "DIVISION ##{div_id+1}"
+      puts "====================="
+      div_rounds.each_with_index do |round,j|
+        puts "Round ##{j+1}"
+        puts "=============="
+        round.games.each do |g|
+          puts g.team_a.to_s + " Vs " + g.team_b.to_s
+        end
+      end
+    end
+    
   end
   context "A Schedule instance" do
     should "have default values for every options" do
       schedule = RRSchedule::Schedule.new
-
       assert schedule.teams.size > 2
       assert_equal 1, schedule.cycles
       assert schedule.rules.respond_to?(:to_ary)

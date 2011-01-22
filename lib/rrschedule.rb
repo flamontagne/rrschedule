@@ -83,6 +83,7 @@ module RRSchedule
 
       @nteams.each_with_index do |teams,division_id|
         current_cycle = current_round = 0
+        teams = teams.sort_by{rand}
         begin
           t = teams.clone
           games = []
@@ -99,6 +100,8 @@ module RRSchedule
           ####
           current_round += 1
 
+          teams = teams.insert(1,teams.delete_at(teams.size-1))
+          
           #add the round in memory
           @rounds ||= []
           @rounds[division_id] ||= []
@@ -116,11 +119,11 @@ module RRSchedule
           #if we have completed a full round-robin for the current division
           if current_round == teams.size-1
             current_cycle += 1
+            teams = teams.sort_by{rand}
           end
 
         end until current_round == teams.size-1 && current_cycle==self.cycles
       end
-
       slice(@rounds)
       self
     end
@@ -175,41 +178,30 @@ module RRSchedule
     private
     #Slice games according to playing surfaces available and game times
     def slice(rounds)
-#      rounds = [
-#        [
-#          [
-#            :round => 1,
-#            :games => []
-#          ],
-#          [
-#            :round => 2,
-#            :games => []
-#          ],
-#          ...
-#        ],
-#
-#        [],
-#        [],
-#      ]
-
-      nbr_of_rounds = rounds.first.size
-      nbr_of_divisions = rounds.size
-      nbr_of_rounds.times do |round_id|
-        nbr_of_divisions.times do |division_id|
-          rounds[division_id][round_id].games.each do |game|
-            #Here we need to add each game at the correct place depending on the rules
-
-#            gameday.games << Game.new(
-#              :team_a => game.team_a,
-#              :team_b => game.team_b,
-#              :game_date => cur_date,
-#              :game_time => cur_gt,
-#              :playing_surface => cur_ps
-#            )
+      rounds_copy =  Marshal.load(Marshal.dump(rounds)) #deep clone
+      nbr_of_flights = rounds_copy.size
+      cur_flight = 0
+      #while there are remaining games      
+      while !rounds_copy.empty? do
+        cur_round = rounds_copy[cur_flight].shift
+        
+        #process the next round in the current divd
+        if cur_round
+          cur_round.games.each do |game|
+  #            gameday.games << Game.new(
+  #              :team_a => game.team_a,
+  #              :team_b => game.team_b,
+  #              :game_date => cur_date,
+  #              :game_time => cur_gt,
+  #              :playing_surface => cur_ps
+  #            )
           end
         end
-      end
-
+        
+        empty_flights = rounds_copy.select {|flight| flight.empty?}
+        rounds_copy=[] if empty_flights.size == nbr_of_flights        
+        cur_flight = cur_flight == nbr_of_flights-1 ? 0 : cur_flight+1
+      end      
     end
 
     #get the next gameday
