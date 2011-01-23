@@ -222,13 +222,8 @@ module RRSchedule
         if cur_round          
           cur_round.games.each do |game|
             unless [game.team_a,game.team_b].include?(:dummy)            
-              begin
               flat_schedule[i][:team_a] = game.team_a
               flat_schedule[i][:team_b] = game.team_b
-              
-              rescue
-              end
-              
               i+=1
             end
           end
@@ -241,9 +236,9 @@ module RRSchedule
         if cur_flight == nbr_of_flights-1
           cur_flight = 0
           #we have finished a round. We cannot start another round on the same gameday
-          #while flat_schedule[i] && flat_schedule[i][:gamedate] == flat_schedule[i-1][:gamedate] do
-           # i+=1
-#          end
+          while flat_schedule[i] && flat_schedule[i][:gamedate] == flat_schedule[i-1][:gamedate] do
+            i+=1
+          end
         else
           cur_flight += 1
           
