@@ -35,7 +35,6 @@ module RRSchedule
         raise "at least 2 teams are required" if team_group.size == 1
         raise "teams have to be unique" if team_group.uniq.size < team_group.size
         @nteams[i] << :dummy if team_group.size.odd?
-        puts @nteams[i].inspect
       end
     end
 
@@ -190,12 +189,12 @@ module RRSchedule
       flat_schedule = []
       nbr_of_games = 0
       @nteams.each do |flight|
-        nbr_of_games += self.cycles * (flight.include?(:dummy) ? ((flight.size-1)/2)*(flight.size-2) : (flight.size/2)*(flight.size-1))
+        nbr_of_games += self.cycles * (flight.include?(:dummy) ? ((flight.size-1)/2.0)*(flight.size-2) : (flight.size/2)*(flight.size-1))
       end
       
       while nbr_of_games > 0 do
         cur_rule.gt.each do |gt|
-          cur_rule.ps.each do |ps|
+          cur_rule.ps.each do |ps|          
             flat_game = {:gamedate => cur_date, :gt => gt, :ps => ps}
             flat_schedule << flat_game
             nbr_of_games -= 1
@@ -205,9 +204,8 @@ module RRSchedule
         cur_rule = rules_copy[cur_rule_index]
         cur_date+=1
         cur_date= next_game_date(cur_date,cur_rule.wday)
-      end
+      end      
       flat_schedule      
-      
     end
     
     #Slice games according to available playing surfaces  and game times
@@ -223,27 +221,38 @@ module RRSchedule
         #process the next round in the current flight
         if cur_round          
           cur_round.games.each do |game|
-            unless [game.team_a,game.team_b].include?(:dummy)
-              flat_schedule[i][:team_a] = game.team_a              
+            unless [game.team_a,game.team_b].include?(:dummy)            
+              begin
+              flat_schedule[i][:team_a] = game.team_a
               flat_schedule[i][:team_b] = game.team_b
+              
+              rescue
+              end
+              
               i+=1
             end
           end
         end
+        
         
         empty_flights = rounds_copy.select {|flight| flight.empty?}
         rounds_copy=[] if empty_flights.size == nbr_of_flights     
         
         if cur_flight == nbr_of_flights-1
           cur_flight = 0
+          #we have finished a round. We cannot start another round on the same gameday
+          #while flat_schedule[i] && flat_schedule[i][:gamedate] == flat_schedule[i-1][:gamedate] do
+           # i+=1
+#          end
         else
           cur_flight += 1
+          
         end        
       end      
             
       s=flat_schedule.group_by{|fs| fs[:gamedate]}.sort
-      s.each do |gamedate,gms|
-      
+
+      s.each do |gamedate,gms|      
         games = []
         gms.each do |gm|
     
@@ -257,6 +266,9 @@ module RRSchedule
         self.gamedays << Gameday.new(:date => gamedate, :games => games)
       end
       
+      self.gamedays.each do |gd|
+        gd.games.reject! {|g| g.team_a.nil?}
+      end
     end
 
     #get the next gameday

@@ -27,7 +27,7 @@ class TestRrschedule < Test::Unit::TestCase
 #        end
 #      end
 #    end
-#    puts s.to_s    
+    puts s.to_s    
   end
 #  context "A Schedule instance" do
 #    should "have default values for every options" do
