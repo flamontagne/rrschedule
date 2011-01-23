@@ -187,23 +187,33 @@ module RRSchedule
       cur_rule_index = rules_copy.index(cur_rule)
       cur_date = next_game_date(self.start_date,cur_rule.wday)
       flat_schedule = []
-      nbr_of_games = 0
+      nbr_of_games = max_games_per_day = 0
+      day_game_ctr = 0
+      
       @nteams.each do |flight|
         nbr_of_games += self.cycles * (flight.include?(:dummy) ? ((flight.size-1)/2.0)*(flight.size-2) : (flight.size/2)*(flight.size-1))
+        max_games_per_day += (flight.include?(:dummy) ? (flight.size-2)/2.0 : (flight.size-1)/2.0).ceil
       end
-      
+      puts "JOUE #{max_games_per_day}"
       while nbr_of_games > 0 do
         cur_rule.gt.each do |gt|
           cur_rule.ps.each do |ps|          
-            flat_game = {:gamedate => cur_date, :gt => gt, :ps => ps}
-            flat_schedule << flat_game
-            nbr_of_games -= 1
+            if day_game_ctr <= max_games_per_day-1
+              flat_game = {:gamedate => cur_date, :gt => gt, :ps => ps}
+              flat_schedule << flat_game
+              nbr_of_games -= 1
+              day_game_ctr+=1
+            end
           end      
         end
         cur_rule_index = cur_rule_index == rules_copy.size-1 ? 0 : cur_rule_index + 1
         cur_rule = rules_copy[cur_rule_index]
         cur_date+=1
+        
+        last_date = cur_date
         cur_date= next_game_date(cur_date,cur_rule.wday)
+        
+        day_game_ctr = 0 if cur_date != last_date
       end      
       flat_schedule      
     end
@@ -235,10 +245,6 @@ module RRSchedule
         
         if cur_flight == nbr_of_flights-1
           cur_flight = 0
-          #we have finished a round. We cannot start another round on the same gameday
-          while flat_schedule[i] && flat_schedule[i][:gamedate] == flat_schedule[i-1][:gamedate] do
-            i+=1
-          end
         else
           cur_flight += 1
           

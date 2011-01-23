@@ -16,8 +16,8 @@ class TestRrschedule < Test::Unit::TestCase
     s.start_date=Date.parse("2010/11/30")
     s.exclude_dates = [Date.parse("2010/12/26"),Date.parse("2011/01/23")]
     s.generate
-#    s.rounds.each_with_index do |div_rounds,div_id|
-#      puts "DIVISION ##{div_id+1}"
+    #s.rounds.each_with_index do |div_rounds,div_id|
+    #  puts "DIVISION ##{div_id+1}"
 #      puts "====================="
 #      div_rounds.each_with_index do |round,j|
 #        puts "Round ##{j+1}"
