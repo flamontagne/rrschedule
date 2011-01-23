@@ -6,7 +6,6 @@ module RRSchedule
     attr_reader :teams, :flights, :rounds, :gamedays                
     attr_accessor :rules, :cycles, :start_date, :exclude_dates,:shuffle_initial_order
 
-
     def initialize(params={})
       @gamedays = []
       self.teams = params[:teams] if params[:teams]
@@ -25,8 +24,7 @@ module RRSchedule
       #a flight is a division where teams play round-robin against each other
       @flights = Marshal.load(Marshal.dump(@teams)) #deep clone
 
-      #If teams aren't grouped, we create a single group and put all teams in it. That way
-      #we won't have to check if this is a grouped round-robin or not every time.
+      #If teams aren't in flights, we create a single flight and put all teams in it
       @flights = [@flights] unless @flights.first.respond_to?(:to_ary)
       @flights.each_with_index do |flight,i|
         raise ":dummy is a reserved team name. Please use something else" if flight.member?(:dummy)
@@ -38,10 +36,14 @@ module RRSchedule
 
     #This will generate the schedule based on the various parameters
     def generate(params={})
-      flat_schedule = generate_flat_schedule
+      @gamedays = []
+      @rounds = []
+      
       @flights.each_with_index do |teams,flight_id|
         current_cycle = current_round = 0
         teams = teams.sort_by{rand} if @shuffle_initial_order
+        
+        #loop to generate the whole round-robin(s) for the current flight
         begin
           t = teams.clone
           games = []
@@ -55,9 +57,11 @@ module RRSchedule
             matchup = {:team_a => team_a, :team_b => team_b}
             games << matchup
           end
-          ####
+          #done processing round
+          
           current_round += 1
 
+          #Team rotation
           teams = teams.insert(1,teams.delete_at(teams.size-1))
           
           #add the round in memory
@@ -73,18 +77,22 @@ module RRSchedule
               )              
             }
           )
-          ####
+          #done adding round
 
           #have we completed a full round-robin for the current flight?
           if current_round == teams.size-1            
             current_cycle += 1
-            current_round = 0 if current_cycle < self.cycles
-            teams = teams.sort_by{rand} if @shuffle_initial_order && current_cycle <= self.cycles
+            
+            if current_cycle < self.cycles 
+              current_round = 0 
+              teams = teams.sort_by{rand} if @shuffle_initial_order
+            end
           end
         
         end until current_round == teams.size-1 && current_cycle==self.cycles
       end   
-      slice(@rounds,flat_schedule)
+      
+      dispatch_games(@rounds)
       self
     end
 
@@ -118,8 +126,60 @@ module RRSchedule
     end
 
     private
+    
+    #Dispatch games according to available playing surfaces and game times
+    #The flat schedule contains "place holders" for the actual games. Each row contains
+    #a game date, a game time and a playing surface. We then process our rounds one by one
+    #and we put each matchup in the next available slot of the flat schedule
+    def dispatch_games(rounds)
+      flat_schedule = generate_flat_schedule
+    
+      rounds_copy =  Marshal.load(Marshal.dump(rounds)) #deep clone
+      nbr_of_flights = rounds_copy.size
+      cur_flight = 0
+      i=0
+      while !rounds_copy.flatten.empty? do
+        cur_round = rounds_copy[cur_flight].shift
+
+        #process the next round in the current flight
+        if cur_round          
+          cur_round.games.each do |game|
+            unless [game.team_a,game.team_b].include?(:dummy)            
+              flat_schedule[i][:team_a] = game.team_a
+              flat_schedule[i][:team_b] = game.team_b
+              i+=1
+            end
+          end
+        end
+        
+
+        if cur_flight == nbr_of_flights-1
+          cur_flight = 0
+        else
+          cur_flight += 1          
+        end        
+      end
+      
+      #We group our flat schedule by gameday        
+      s=flat_schedule.group_by{|fs| fs[:gamedate]}.sort
+      s.each do |gamedate,gms|      
+        games = []
+        gms.each do |gm|    
+          games << Game.new(
+            :team_a => gm[:team_a],
+            :team_b => gm[:team_b],
+            :playing_surface => gm[:ps],
+            :game_time => gm [:gt] 
+          )
+        end
+        self.gamedays << Gameday.new(:date => gamedate, :games => games)
+      end      
+      self.gamedays.each { |gd| gd.games.reject! {|g| g.team_a.nil?}}
+    end
+
+
     def generate_flat_schedule
-      rules_copy = Marshal.load(Marshal.dump(rules)).sort #deep clone
+      rules_copy = Marshal.load(Marshal.dump(@rules)).sort #deep clone
       
       rule_ctr = 0
       #detect the first rule
@@ -163,61 +223,13 @@ module RRSchedule
       flat_schedule
     end
     
-    #Slice games according to available playing surfaces  and game times
-    def slice(rounds,flat_schedule)
-      rounds_copy =  Marshal.load(Marshal.dump(rounds)) #deep clone
-      nbr_of_flights = rounds_copy.size
-      cur_flight = 0
-
-      i=0
-      while !rounds_copy.empty? do
-        cur_round = rounds_copy[cur_flight].shift
-
-        #process the next round in the current flight
-        if cur_round          
-          cur_round.games.each do |game|
-            unless [game.team_a,game.team_b].include?(:dummy)            
-              flat_schedule[i][:team_a] = game.team_a
-              flat_schedule[i][:team_b] = game.team_b
-              i+=1
-            end
-          end
-        end
-        
-        
-        empty_flights = rounds_copy.select {|flight| flight.empty?}
-        rounds_copy=[] if empty_flights.size == nbr_of_flights     
-        
-        if cur_flight == nbr_of_flights-1
-          cur_flight = 0
-        else
-          cur_flight += 1          
-        end        
-      end
-            
-      s=flat_schedule.group_by{|fs| fs[:gamedate]}.sort
-
-      s.each do |gamedate,gms|      
-        games = []
-        gms.each do |gm|    
-          games << Game.new(
-            :team_a => gm[:team_a],
-            :team_b => gm[:team_b],
-            :playing_surface => gm[:ps],
-            :game_time => gm [:gt] 
-          )
-        end
-        self.gamedays << Gameday.new(:date => gamedate, :games => games)
-      end      
-      self.gamedays.each { |gd| gd.games.reject! {|g| g.team_a.nil?}}
-    end
-
     #get the next gameday
     def next_game_date(dt,wday)
       dt += 1 until wday == dt.wday && !self.exclude_dates.include?(dt)
       dt
     end
     
+    #return matchups between two teams
     def face_to_face(team_a,team_b)
       res=[]
       self.gamedays.each do |gd|
