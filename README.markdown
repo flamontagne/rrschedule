@@ -9,20 +9,20 @@ round-robin(s) into gamedays that respect these contraints.
     gem install rrschedule
     require 'rrschedule'
 
-## Prepare the schedule ##           
+## Prepare the schedule ##               
     schedule=RRSchedule::Schedule.new(
       #array of teams that will compete against each other. If you group teams into multiple flights (divisions),
       #a separate round-robin is generated in each of them but the "physical constraints" are shared
       :teams => [
         %w(A1 A2 A3 A4 A5 A6 A7 A8),
         %w(B1 B2 B3 B4 B5 B6 B7 B8)
-      ]
+      ],
 
       #Setup some scheduling rules
       :rules => [
-        Rule.new(:wday => 3, :gt => ["7:00PM","9:00PM"], :ps => %w(field #1, field #2)),
-        Rule.new(:wday => 5, :gt => ["7:00PM"], :ps => %w(field #1))
-      ]    
+        RRSchedule::Rule.new(:wday => 3, :gt => ["7:00PM","9:00PM"], :ps => ["field #1", "field #2"]),
+        RRSchedule::Rule.new(:wday => 5, :gt => ["7:00PM"], :ps => ["field #1"])
+      ],
           
       #First games are played on...
       :start_date => Date.parse("2010/10/13"),
