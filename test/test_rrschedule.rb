@@ -1,6 +1,5 @@
 require 'helper'
 class TestRrschedule < Test::Unit::TestCase
-  #########
   context "new instance without params" do
     setup do
       @s= RRSchedule::Schedule.new
@@ -12,10 +11,8 @@ class TestRrschedule < Test::Unit::TestCase
       assert_equal Date.today, @s.start_date
       assert_equal [], @s.exclude_dates
     end
-  end  
+  end      
   
-  
-  #########
   context "no flight" do
     setup do
        @s=RRSchedule::Schedule.new(:teams => %w(1 2 3 4 5 6))
@@ -30,7 +27,6 @@ class TestRrschedule < Test::Unit::TestCase
     end    
   end
 
-  #########
   context "odd number of teams without flight" do
     setup do
       @s=RRSchedule::Schedule.new(:teams => %w(1 2 3 4 5))
@@ -48,7 +44,6 @@ class TestRrschedule < Test::Unit::TestCase
     end
   end  
   
-  ######### 
   context "multi flights" do
     setup do
       @s = RRSchedule::Schedule.new(
@@ -94,13 +89,10 @@ class TestRrschedule < Test::Unit::TestCase
       assert true
     end
     
-    should "only have games that respect the gameday rules" do
-      assert true
-    end
   end
 
   ##### RULES #######
-  context "2 rules on the same weekday" do
+  context "multiple rules on the same weekday" do
     setup do
       @s = RRSchedule::Schedule.new
       @s.teams = [%w(a1 a2 a3 a4 a5), %w(b1 b2 b3 b4 b5 b6 b7 b8)]
@@ -112,7 +104,7 @@ class TestRrschedule < Test::Unit::TestCase
       @s.generate      
     end
     
-    should "not split them over multiple days" do
+    should "keep games on the same day" do
       cur_date = @s.start_date
       @s.gamedays.each_with_index do |gd,i|        
         assert_equal cur_date, gd.date
