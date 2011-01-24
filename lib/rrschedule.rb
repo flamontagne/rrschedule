@@ -179,46 +179,45 @@ module RRSchedule
 
 
     def generate_flat_schedule
-      rules_copy = Marshal.load(Marshal.dump(@rules)).sort #deep clone
-      
-      rule_ctr = 0
-      #detect the first rule
-      cur_rule  = rules_copy.select{|r| r.wday >= self.start_date.wday}.first
-      cur_rule = rules_copy.first if cur_rule.nil?
-      cur_rule_index = rules_copy.index(cur_rule)
-      cur_date = next_game_date(self.start_date,cur_rule.wday)
       flat_schedule = []
-      nbr_of_games = max_games_per_day = 0
-      day_game_ctr = 0
+      games_left = max_games_per_day = day_game_ctr = rule_ctr = 0
+
+      #determine first rule based on the nearest gameday
+      cur_rule  = @rules.select{|r| r.wday >= self.start_date.wday}.first || @rules.first
+      cur_rule_index = @rules.index(cur_rule)
+      cur_date = next_game_date(self.start_date,cur_rule.wday)
       
       @flights.each do |flight|
-        nbr_of_games += self.cycles * (flight.include?(:dummy) ? ((flight.size-1)/2.0)*(flight.size-2) : (flight.size/2)*(flight.size-1))
+        games_left += @cycles * (flight.include?(:dummy) ? ((flight.size-1)/2.0)*(flight.size-2) : (flight.size/2)*(flight.size-1))
         max_games_per_day += (flight.include?(:dummy) ? (flight.size-2)/2.0 : (flight.size-1)/2.0).ceil
       end
 
-      while nbr_of_games > 0 do
+      #process all games
+      while games_left > 0 do
         cur_rule.gt.each do |gt|
           cur_rule.ps.each do |ps|          
+          
+            #if there are more physical resources (playing surfaces and game times) for a given day than
+            #we need, we don't use them all (or else some teams would play twice on a single day)
             if day_game_ctr <= max_games_per_day-1
-              flat_game = {:gamedate => cur_date, :gt => gt, :ps => ps}
-              flat_schedule << flat_game
-              nbr_of_games -= 1
-              day_game_ctr+=1
+              flat_schedule << {:gamedate => cur_date, :gt => gt, :ps => ps}
+              games_left -= 1; day_game_ctr += 1
             end
           end                
         end
-        cur_rule_index = (cur_rule_index == rules_copy.size-1) ? 0 : cur_rule_index + 1
+
         last_rule = cur_rule
-        cur_rule = rules_copy[cur_rule_index]
-                
         last_date = cur_date
 
-        if cur_rule.wday != last_rule.wday || rules.size==1
-          cur_date+=1
-          cur_date= next_game_date(cur_date,cur_rule.wday)
-        end
-        
-        day_game_ctr = 0 if cur_date != last_date
+        #Advance to the next rule (if we're at the last one, we go back to the first)
+        cur_rule_index = (cur_rule_index == @rules.size-1) ? 0 : cur_rule_index + 1
+        cur_rule = @rules[cur_rule_index]
+                
+        #Go to the next date (except if the new rule is for the same weekday)
+        if cur_rule.wday != last_rule.wday || @rules.size==1
+          cur_date = next_game_date(cur_date+=1,cur_rule.wday)          
+          day_game_ctr = 0          
+        end        
       end      
       flat_schedule
     end
