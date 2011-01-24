@@ -135,11 +135,10 @@ module RRSchedule
       flat_schedule = generate_flat_schedule
     
       rounds_copy =  Marshal.load(Marshal.dump(rounds)) #deep clone
-      nbr_of_flights = rounds_copy.size
-      cur_flight = 0
-      i=0
+      cur_flight_index = i = 0
+
       while !rounds_copy.flatten.empty? do
-        cur_round = rounds_copy[cur_flight].shift
+        cur_round = rounds_copy[cur_flight_index].shift
 
         #process the next round in the current flight
         if cur_round          
@@ -153,10 +152,10 @@ module RRSchedule
         end
         
 
-        if cur_flight == nbr_of_flights-1
-          cur_flight = 0
+        if cur_flight_index == @flights.size-1
+          cur_flight_index = 0
         else
-          cur_flight += 1          
+          cur_flight_index += 1          
         end        
       end
       
