@@ -9,7 +9,7 @@ games into gamedays that respect these contraints.
     gem install rrschedule
     require 'rrschedule'
 
-## Prepare the schedule ##               
+## Prepare the schedule ##
     schedule=RRSchedule::Schedule.new(
       #array of teams that will compete against each other. If you group teams into multiple flights (divisions),
       #a separate round-robin is generated in each of them but the "physical constraints" are shared
@@ -55,8 +55,8 @@ games into gamedays that respect these contraints.
       puts "\n"
     end
 
-### Each round of the roun-robin without any date/time or playing location info ###
-    schedule.rounds.each { |round| puts round.to_s}
+### Display each round of the round-robin(s) without any date/time or playing location info ###
+    puts s.rounds.collect{|r| r.to_s}
 
 ## Issues / Other ##
 
