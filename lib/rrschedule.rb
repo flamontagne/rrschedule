@@ -36,6 +36,9 @@ module RRSchedule
 
     #This will generate the schedule based on the various parameters
     def generate(params={})
+      raise "You need to specify at least 1 team" if @teams.nil? || @teams.empty?
+      raise "You need to specify at least 1 rule" if @rules.nil? || @rules.empty?
+            
       @gamedays = []
       @rounds = []
       

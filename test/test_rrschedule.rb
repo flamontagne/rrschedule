@@ -1,24 +1,27 @@
 require 'helper'
 class TestRrschedule < Test::Unit::TestCase
+  include RRSchedule
   context "new instance without params" do
-    setup do
-      @s= RRSchedule::Schedule.new
-    end
-    
+    setup {@s= Schedule.new}
     should "have default values for some options" do
       assert_equal 1, @s.cycles
       assert @s.shuffle
       assert_equal Date.today, @s.start_date
       assert_equal [], @s.exclude_dates
     end
+  end
+  
+  context "no teams" do
+    setup {@s = Schedule.new(:rules => [Rule.new(:wday => 1, :gt => ["7:00PM"], :ps => %w(one two))])}
+    should "raise an exception" do
+      exception = assert_raise(RuntimeError){@s.generate}
+      assert_equal "You need to specify at least 1 team", exception.message      
+    end  
   end      
   
   context "no flight" do
-    setup do
-       @s=RRSchedule::Schedule.new(:teams => %w(1 2 3 4 5 6))
-    end    
-    
-    should "be wrapped into a single division in the normalized array" do
+    setup{@s=Schedule.new(:teams => %w(1 2 3 4 5 6))}     
+    should "be wrapped into a single flight in the normalized array" do
       assert_equal [%w(1 2 3 4 5 6)], @s.flights
     end
     
@@ -28,10 +31,7 @@ class TestRrschedule < Test::Unit::TestCase
   end
 
   context "odd number of teams without flight" do
-    setup do
-      @s=RRSchedule::Schedule.new(:teams => %w(1 2 3 4 5))
-    end
-        
+    setup {@s=Schedule.new(:teams => %w(1 2 3 4 5))}        
     should "add a dummy competitor in the created flight" do
       assert_equal 1, @s.flights.size
       assert_equal 6, @s.flights.first.size
@@ -43,10 +43,41 @@ class TestRrschedule < Test::Unit::TestCase
       assert !@s.teams.include?(:dummy)      
     end
   end  
+
+
+  context "extra available resources" do
+    setup do
+      @s = Schedule.new(
+        :teams => %w(a1 a2 a3 a4 a5),
+        :rules => [
+          Rule.new(
+            :wday => 3, 
+            :gt => ["7:00PM", "9:00PM"], 
+            :ps => %w(one two three four)
+          )
+        ]
+      ).generate
+    end
+    
+    should "have a maximum of (teams/2) games per day" do
+      @s.gamedays.each do |gd|
+        assert gd.games.size <= @s.teams.size/2
+      end
+    end
+    
+    should "not have a team that play more than once on a single day" do
+      @s.gamedays.each do |gd|
+        day_teams = gd.games.collect{|g| [g.team_a,g.team_b]}.flatten
+        unique_day_teams = day_teams.uniq
+        assert_equal day_teams.size, unique_day_teams.size
+      end
+    end    
+  end
   
+    
   context "multi flights" do
     setup do
-      @s = RRSchedule::Schedule.new(
+      @s = Schedule.new(
         :teams => [
           %w(A1 A2 A3 A4 A5 A6 A7 A8),
           %w(B1 B2 B3 B4 B5 B6 B7 B8),
@@ -55,7 +86,7 @@ class TestRrschedule < Test::Unit::TestCase
         ],
         
         :rules => [
-          RRSchedule::Rule.new(
+          Rule.new(
             :wday => 3, 
             :gt => ["7:00PM", "9:00PM"], 
             :ps => ["one","two"]
@@ -82,23 +113,36 @@ class TestRrschedule < Test::Unit::TestCase
       assert !@s.gamedays.collect{|gd| gd.date}.include?(Date.parse("2011/02/02"))
       assert @s.gamedays.collect{|gd| gd.date}.include?(Date.parse("2011/02/09"))      
     end
-    
-    
-    #pending tests
-    should "not have a team that plays twice on the same gameday" do
-      assert true
-    end
-    
   end
 
   ##### RULES #######
+  should "auto create array for gt and ps" do
+    @s = Schedule.new(
+      :teams => %w(a1 a2 a4 a5),
+      :rules => [
+        Rule.new(:wday => 1, :gt => "7:00PM", :ps => "The Field")
+      ]
+    ).generate
+    
+    assert_equal [DateTime.parse("7:00PM")], @s.rules.first.gt
+    assert_equal ["The Field"], @s.rules.first.ps
+  end
+    
+  context "no rules specified" do
+    setup {@s = Schedule.new(:teams => %w(a1 a2 a4 a5))}
+    should "raise an exception" do
+      exception = assert_raise(RuntimeError){@s.generate}
+      assert_equal "You need to specify at least 1 rule", exception.message      
+    end
+  end  
+  
   context "multiple rules on the same weekday" do
     setup do
-      @s = RRSchedule::Schedule.new
+      @s = Schedule.new
       @s.teams = [%w(a1 a2 a3 a4 a5), %w(b1 b2 b3 b4 b5 b6 b7 b8)]
       @s.rules = [
-        RRSchedule::Rule.new(:wday => 4, :gt => ["7:00PM"], :ps => %w(field#1 field#2)),
-        RRSchedule::Rule.new(:wday => 4, :gt => ["9:00PM"], :ps => %w(field#1 field#2 field#3))
+        Rule.new(:wday => 4, :gt => ["7:00PM"], :ps => %w(field#1 field#2)),
+        Rule.new(:wday => 4, :gt => ["9:00PM"], :ps => %w(field#1 field#2 field#3))
       ]
       @s.start_date = Date.parse("2011/01/27")
       @s.generate      
