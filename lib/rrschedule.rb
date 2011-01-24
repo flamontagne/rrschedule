@@ -3,14 +3,14 @@
 ############################################################################################################################
 module RRSchedule
   class Schedule
-    attr_reader :teams, :flights, :rounds, :gamedays                
-    attr_accessor :rules, :cycles, :start_date, :exclude_dates,:shuffle_initial_order
+    attr_reader :teams, :flights, :rounds, :gamedays
+    attr_accessor :rules, :cycles, :start_date, :exclude_dates,:shuffle
 
     def initialize(params={})
       @gamedays = []
       self.teams = params[:teams] if params[:teams]
       self.cycles = params[:cycles] || 1
-      self.shuffle_initial_order = params[:shuffle_initial_order].nil? ? true : params[:shuffle_initial_order]
+      self.shuffle = params[:shuffle].nil? ? true : params[:shuffle]
       self.exclude_dates = params[:exclude_dates] || []      
       self.start_date = params[:start_date] || Date.today
       self.rules = params[:rules] || []
@@ -41,7 +41,7 @@ module RRSchedule
       
       @flights.each_with_index do |teams,flight_id|
         current_cycle = current_round = 0
-        teams = teams.sort_by{rand} if @shuffle_initial_order
+        teams = teams.sort_by{rand} if @shuffle
         
         #loop to generate the whole round-robin(s) for the current flight
         begin
@@ -85,7 +85,7 @@ module RRSchedule
             
             if current_cycle < self.cycles 
               current_round = 0 
-              teams = teams.sort_by{rand} if @shuffle_initial_order
+              teams = teams.sort_by{rand} if @shuffle
             end
           end
         
@@ -213,7 +213,7 @@ module RRSchedule
         cur_rule = @rules[cur_rule_index]
                 
         #Go to the next date (except if the new rule is for the same weekday)
-        if cur_rule.wday != last_rule.wday || @rules.size==1
+        if cur_rule.wday != last_rule.wday || cur_rule_index == 0
           cur_date = next_game_date(cur_date+=1,cur_rule.wday)          
           day_game_ctr = 0          
         end        

@@ -8,11 +8,12 @@ class TestRrschedule < Test::Unit::TestCase
     
     should "have default values for some options" do
       assert_equal 1, @s.cycles
-      assert @s.shuffle_initial_order
+      assert @s.shuffle
       assert_equal Date.today, @s.start_date
       assert_equal [], @s.exclude_dates
     end
   end  
+  
   
   #########
   context "no flight" do
@@ -47,7 +48,7 @@ class TestRrschedule < Test::Unit::TestCase
     end
   end  
   
-  #########
+  ######### 
   context "multi flights" do
     setup do
       @s = RRSchedule::Schedule.new(
@@ -96,5 +97,38 @@ class TestRrschedule < Test::Unit::TestCase
     should "only have games that respect the gameday rules" do
       assert true
     end
+  end
+
+  ##### RULES #######
+  context "2 rules on the same weekday" do
+    setup do
+      @s = RRSchedule::Schedule.new
+      @s.teams = [%w(a1 a2 a3 a4 a5), %w(b1 b2 b3 b4 b5 b6 b7 b8)]
+      @s.rules = [
+        RRSchedule::Rule.new(:wday => 4, :gt => ["7:00PM"], :ps => %w(field#1 field#2)),
+        RRSchedule::Rule.new(:wday => 4, :gt => ["9:00PM"], :ps => %w(field#1 field#2 field#3))
+      ]
+      @s.start_date = Date.parse("2011/01/27")
+      @s.generate      
+    end
+    
+    should "not split them over multiple days" do
+      cur_date = @s.start_date
+      @s.gamedays.each_with_index do |gd,i|        
+        assert_equal cur_date, gd.date
+        
+        #check all days to make sure that our rules are respected. We don't check 
+        #the last one because it might not be full (round-robin over)
+        if i<@s.gamedays.size-1
+          assert_equal 5, gd.games.size 
+          assert_equal 1, gd.games.select{|g| g.game_time == DateTime.parse("7:00PM") && g.playing_surface == "field#1"}.size
+          assert_equal 1, gd.games.select{|g| g.game_time == DateTime.parse("7:00PM") && g.playing_surface == "field#2"}.size      
+          assert_equal 1, gd.games.select{|g| g.game_time == DateTime.parse("9:00PM") && g.playing_surface == "field#1"}.size
+          assert_equal 1, gd.games.select{|g| g.game_time == DateTime.parse("9:00PM") && g.playing_surface == "field#2"}.size      
+          assert_equal 1, gd.games.select{|g| g.game_time == DateTime.parse("9:00PM") && g.playing_surface == "field#3"}.size
+          cur_date += 7        
+        end
+      end
+    end    
   end
 end
