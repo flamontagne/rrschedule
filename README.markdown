@@ -2,8 +2,8 @@
 
 RRSchedule makes it easier to generate round-robin schedules for sport leagues.
 
-It takes into consideration the number of available playing surfaces and game times and split the
-round-robin(s) into gamedays that respect these contraints.
+It takes into consideration the number of available playing surfaces and game times and split
+games into gamedays that respect these contraints.
 
 ## Installation ##
     gem install rrschedule
