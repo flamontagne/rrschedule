@@ -2,8 +2,8 @@
   <head>
     <title>RRSchedule ruby gem homepage</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <link href="style.css" media="screen" rel="stylesheet" type="text/css" /> 
-    
+    <link href="style.css" media="screen" rel="stylesheet" type="text/css" />
+
     <script type="text/javascript">
 
       var _gaq = _gaq || [];
@@ -21,28 +21,33 @@
   <body>
 
     <div id="container">
-    
+
         <div class="content">
           <h1><span class='highlight'>RRS</span>chedule</h1>
           <h2>A ruby gem that makes it easier to generate Round-Robin schedules</h2>
-          
+
+
           <pre>
-            gem install rrschedule            
+            gem install rrschedule
             require 'rrschedule'
-            schedule = RRSchedule::Schedule.new(
-              :teams => %w(a b c d e f g h i j k l m n o p q r s),
-              :playing_surfaces => ["Big court", "Small court"],
-              :game_times => ["5:00 PM","7:00 PM"],
-              :wdays => [3], #games are played on wednesdays...
-              :start_date => Date.today
+            schedule=RRSchedule::Schedule.new(
+              :teams => %w(T1 T2 T3 T4 T5 T6 T7 T8),
+              :rules => [
+                RRSchedule::Rule.new(:wday => 3, :gt => ["7:00PM","9:00PM"], :ps => ["field #1", "field #2"]),
+                RRSchedule::Rule.new(:wday => 5, :gt => ["7:00PM"], :ps => ["field #1"])
+              ],
+              :start_date => Date.parse("2010/10/13"),
             ).generate
-            
-            #human readable schedule
+
+            #human-readable schedule
             puts schedule.to_s
-            
+
+            #just the round-robin
+            puts schedule.rounds.collect{|r| r.to_s}
+
             #Or, if you want to loop through the schedule...
             schedule.gamedays.each do |gd|
-              puts gd.date              
+              puts gd.date
               gd.games.each do |game|
                 puts "#{game.team_a} Vs #{game.team_b}"
                 #...
@@ -51,11 +56,11 @@
           </pre>
 
           See <a href="http://github.com/flamontagne/rrschedule">github page</a> for more info.
-          
-          <p class='smaller'>gem written by François Lamontagne | <a href="http://rrschedule.azanka.ca">online demo</a> | <a href="http://www.rubyfleebie.com">blog</a> | <a href="http://www.azanka.ca/en">company</a></p>        	
+
+          <p class='smaller'>gem written by François Lamontagne | <a href="http://rrschedule.azanka.ca">online demo</a> | <a href="http://www.rubyfleebie.com">blog</a> | <a href="http://www.azanka.ca/en">company</a></p>
 
         </div>
-  
+
     </div>
 
   </body>
