@@ -3,49 +3,32 @@
 ############################################################################################################################
 module RRSchedule
   class Schedule
-    attr_reader :teams, :flights, :rounds, :gamedays
-    attr_accessor :rules, :cycles, :start_date, :exclude_dates,:shuffle
+    attr_reader :flights, :rounds, :gamedays
+    attr_accessor :teams, :rules, :cycles, :start_date, :exclude_dates,:shuffle
 
     def initialize(params={})
       @gamedays = []
       self.teams = params[:teams] if params[:teams]
       self.cycles = params[:cycles] || 1
       self.shuffle = params[:shuffle].nil? ? true : params[:shuffle]
-      self.exclude_dates = params[:exclude_dates] || []      
+      self.exclude_dates = params[:exclude_dates] || []
       self.start_date = params[:start_date] || Date.today
       self.rules = params[:rules] || []
       self
-    end
-
-    #Array of teams that will compete against each other. You can pass it any kind of object
-    def teams=(arr)
-      @teams = Marshal.load(Marshal.dump(arr)) #deep clone
-
-      #a flight is a division where teams play round-robin against each other
-      @flights = Marshal.load(Marshal.dump(@teams)) #deep clone
-
-      #If teams aren't in flights, we create a single flight and put all teams in it
-      @flights = [@flights] unless @flights.first.respond_to?(:to_ary)
-      @flights.each_with_index do |flight,i|
-        raise ":dummy is a reserved team name. Please use something else" if flight.member?(:dummy)
-        raise "at least 2 teams are required" if flight.size == 1
-        raise "teams have to be unique" if flight.uniq.size < flight.size
-        @flights[i] << :dummy if flight.size.odd?
-      end
     end
 
     #This will generate the schedule based on the various parameters
     def generate(params={})
       raise "You need to specify at least 1 team" if @teams.nil? || @teams.empty?
       raise "You need to specify at least 1 rule" if @rules.nil? || @rules.empty?
-            
+      arrange_flights
       @gamedays = []
       @rounds = []
-      
+
       @flights.each_with_index do |teams,flight_id|
         current_cycle = current_round = 0
         teams = teams.sort_by{rand} if @shuffle
-        
+
         #loop to generate the whole round-robin(s) for the current flight
         begin
           t = teams.clone
@@ -61,12 +44,12 @@ module RRSchedule
             games << matchup
           end
           #done processing round
-          
+
           current_round += 1
 
           #Team rotation
           teams = teams.insert(1,teams.delete_at(teams.size-1))
-          
+
           #add the round in memory
           @rounds ||= []
           @rounds[flight_id] ||= []
@@ -77,24 +60,24 @@ module RRSchedule
               Game.new(
                 :team_a => g[:team_a],
                 :team_b => g[:team_b]
-              )              
+              )
             }
           )
           #done adding round
 
           #have we completed a full round-robin for the current flight?
-          if current_round == teams.size-1            
+          if current_round == teams.size-1
             current_cycle += 1
-            
-            if current_cycle < self.cycles 
-              current_round = 0 
+
+            if current_cycle < self.cycles
+              current_round = 0
               teams = teams.sort_by{rand} if @shuffle
             end
           end
-        
+
         end until current_round == teams.size-1 && current_cycle==self.cycles
-      end   
-      
+      end
+
       dispatch_games(@rounds)
       self
     end
@@ -129,14 +112,29 @@ module RRSchedule
     end
 
     private
-    
+
+    def arrange_flights
+      #a flight is a division where teams play round-robin against each other
+      @flights = Marshal.load(Marshal.dump(@teams)) #deep clone
+
+      #If teams aren't in flights, we create a single flight and put all teams in it
+      @flights = [@flights] unless @flights.first.respond_to?(:to_ary)
+
+      @flights.each_with_index do |flight,i|
+        raise ":dummy is a reserved team name. Please use something else" if flight.member?(:dummy)
+        raise "at least 2 teams are required" if flight.size < 2
+        raise "teams have to be unique" if flight.uniq.size < flight.size
+        @flights[i] << :dummy if flight.size.odd?
+      end
+    end
+
     #Dispatch games according to available playing surfaces and game times
     #The flat schedule contains "place holders" for the actual games. Each row contains
     #a game date, a game time and a playing surface. We then process our rounds one by one
     #and we put each matchup in the next available slot of the flat schedule
     def dispatch_games(rounds)
       flat_schedule = generate_flat_schedule
-    
+
       rounds_copy =  Marshal.load(Marshal.dump(rounds)) #deep clone
       cur_flight_index = i = 0
 
@@ -144,38 +142,38 @@ module RRSchedule
         cur_round = rounds_copy[cur_flight_index].shift
 
         #process the next round in the current flight
-        if cur_round          
+        if cur_round
           cur_round.games.each do |game|
-            unless [game.team_a,game.team_b].include?(:dummy)            
+            unless [game.team_a,game.team_b].include?(:dummy)
               flat_schedule[i][:team_a] = game.team_a
               flat_schedule[i][:team_b] = game.team_b
               i+=1
             end
           end
         end
-        
+
 
         if cur_flight_index == @flights.size-1
           cur_flight_index = 0
         else
-          cur_flight_index += 1          
-        end        
+          cur_flight_index += 1
+        end
       end
-      
-      #We group our flat schedule by gameday        
+
+      #We group our flat schedule by gameday
       s=flat_schedule.group_by{|fs| fs[:gamedate]}.sort
-      s.each do |gamedate,gms|      
+      s.each do |gamedate,gms|
         games = []
-        gms.each do |gm|    
+        gms.each do |gm|
           games << Game.new(
             :team_a => gm[:team_a],
             :team_b => gm[:team_b],
             :playing_surface => gm[:ps],
-            :game_time => gm [:gt] 
+            :game_time => gm [:gt]
           )
         end
         self.gamedays << Gameday.new(:date => gamedate, :games => games)
-      end      
+      end
       self.gamedays.each { |gd| gd.games.reject! {|g| g.team_a.nil?}}
     end
 
@@ -188,7 +186,7 @@ module RRSchedule
       cur_rule  = @rules.select{|r| r.wday >= self.start_date.wday}.first || @rules.first
       cur_rule_index = @rules.index(cur_rule)
       cur_date = next_game_date(self.start_date,cur_rule.wday)
-      
+
       @flights.each do |flight|
         games_left += @cycles * (flight.include?(:dummy) ? ((flight.size-1)/2.0)*(flight.size-2) : (flight.size/2)*(flight.size-1))
         max_games_per_day += (flight.include?(:dummy) ? (flight.size-2)/2.0 : (flight.size-1)/2.0).ceil
@@ -197,15 +195,15 @@ module RRSchedule
       #process all games
       while games_left > 0 do
         cur_rule.gt.each do |gt|
-          cur_rule.ps.each do |ps|          
-          
+          cur_rule.ps.each do |ps|
+
             #if there are more physical resources (playing surfaces and game times) for a given day than
             #we need, we don't use them all (or else some teams would play twice on a single day)
             if day_game_ctr <= max_games_per_day-1
               flat_schedule << {:gamedate => cur_date, :gt => gt, :ps => ps}
               games_left -= 1; day_game_ctr += 1
             end
-          end                
+          end
         end
 
         last_rule = cur_rule
@@ -214,22 +212,22 @@ module RRSchedule
         #Advance to the next rule (if we're at the last one, we go back to the first)
         cur_rule_index = (cur_rule_index == @rules.size-1) ? 0 : cur_rule_index + 1
         cur_rule = @rules[cur_rule_index]
-                
+
         #Go to the next date (except if the new rule is for the same weekday)
         if cur_rule.wday != last_rule.wday || cur_rule_index == 0
-          cur_date = next_game_date(cur_date+=1,cur_rule.wday)          
-          day_game_ctr = 0          
-        end        
-      end      
+          cur_date = next_game_date(cur_date+=1,cur_rule.wday)
+          day_game_ctr = 0
+        end
+      end
       flat_schedule
     end
-    
+
     #get the next gameday
     def next_game_date(dt,wday)
       dt += 1 until wday == dt.wday && !self.exclude_dates.include?(dt)
       dt
     end
-    
+
     #return matchups between two teams
     def face_to_face(team_a,team_b)
       res=[]
@@ -237,7 +235,7 @@ module RRSchedule
         res << gd.games.select {|g| (g.team_a == team_a && g.team_b == team_b) || (g.team_a == team_b && g.team_b == team_a)}
       end
       res.flatten
-    end    
+    end
   end
 
   class Gameday
@@ -314,11 +312,11 @@ module RRSchedule
       self.flight = params[:flight]
       self.games = params[:games] || []
     end
-    
+
     def to_s
       str = "FLIGHT #{@flight.to_s} - Round ##{@round.to_s}\n"
       str += "=====================\n"
-      
+
       self.games.each do |g|
         if [g.team_a,g.team_b].include?(:dummy)
           str+= g.team_a == :dummy ? g.team_b.to_s : g.team_a.to_s + " has a BYE\n"
