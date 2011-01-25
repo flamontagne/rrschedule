@@ -33,8 +33,11 @@
             schedule=RRSchedule::Schedule.new(
               :teams => %w(T1 T2 T3 T4 T5 T6 T7 T8),
               :rules => [
-                RRSchedule::Rule.new(:wday => 3, :gt => ["7:00PM","9:00PM"], :ps => ["field #1", "field #2"]),
-                RRSchedule::Rule.new(:wday => 5, :gt => ["7:00PM"], :ps => ["field #1"])
+                RRSchedule::Rule.new(
+                  :wday => 3,
+                  :gt => ["7:00PM","9:00PM"],
+                  :ps => ["field #1", "field #2"]
+                )
               ],
               :start_date => Date.parse("2010/10/13"),
             ).generate
