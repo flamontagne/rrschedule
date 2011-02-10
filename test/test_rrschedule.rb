@@ -140,7 +140,7 @@ class TestRrschedule < Test::Unit::TestCase
   context "multiple rules on the same weekday" do
     setup do
       @s = Schedule.new
-      @s.teams = [%w(a1 a2 a3 a4 a5), %w(b1 b2 b3 b4 b5 b6 b7 b8)]
+      @s.teams = [%w(a1 a2 a3 a4 a5 a6 a7 a8), %w(b1 b2 b3 b4 b5 b6 b7 b8)]
       @s.rules = [
         Rule.new(:wday => 4, :gt => ["7:00PM"], :ps => %w(field#1 field#2)),
         Rule.new(:wday => 4, :gt => ["9:00PM"], :ps => %w(field#1 field#2 field#3))

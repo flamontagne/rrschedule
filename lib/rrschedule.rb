@@ -133,6 +133,7 @@ module RRSchedule
     #a game date, a game time and a playing surface. We then process our rounds one by one
     #and we put each matchup in the next available slot of the flat schedule
     def dispatch_games(rounds)
+      teams_day = {}
       flat_schedule = generate_flat_schedule
 
       rounds_copy =  Marshal.load(Marshal.dump(rounds)) #deep clone
@@ -145,9 +146,20 @@ module RRSchedule
         if cur_round
           cur_round.games.each do |game|
             unless [game.team_a,game.team_b].include?(:dummy)
+              if teams_day[flat_schedule[i][:gamedate]] && (teams_day[flat_schedule[i][:gamedate]].include?(game.team_a) || teams_day[flat_schedule[i][:gamedate]].include?(game.team_b))
+                #team is already playing this day. This can happen if we have flights with different number of teams in it.
+                gamedate = flat_schedule[i][:gamedate]
+                while flat_schedule[i] && flat_schedule[i][:gamedate] == gamedate do
+                  i += 1
+                end
+              end
+
               flat_schedule[i][:team_a] = game.team_a
               flat_schedule[i][:team_b] = game.team_b
-              i+=1
+              teams_day[flat_schedule[i][:gamedate]] ||= []
+              teams_day[flat_schedule[i][:gamedate]] << game.team_a
+              teams_day[flat_schedule[i][:gamedate]] << game.team_b
+              i += 1
             end
           end
         end
@@ -189,11 +201,14 @@ module RRSchedule
 
       @flights.each do |flight|
         games_left += @cycles * (flight.include?(:dummy) ? ((flight.size-1)/2.0)*(flight.size-2) : (flight.size/2)*(flight.size-1))
-        max_games_per_day += (flight.include?(:dummy) ? (flight.size-2)/2.0 : (flight.size-1)/2.0).ceil
+        max_games_per_day += (flight.include?(:dummy) ? ((flight.size-2)/2.0) : (flight.size-1)/2.0).ceil
       end
 
-      #process all games
+
+      #while there are games to process...
       while games_left > 0 do
+
+        #add all possible games based on the current rule
         cur_rule.gt.each do |gt|
           cur_rule.ps.each do |ps|
 
