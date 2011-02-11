@@ -1,163 +1,178 @@
 require 'helper'
-
 class TestRrschedule < Test::Unit::TestCase
-  context "A Schedule instance" do  
-    should "have default values for every options" do
-      schedule = RRSchedule::Schedule.new
-      
-      assert schedule.teams.size > 2
-      assert_equal 1, schedule.cycles
-      assert schedule.game_times.respond_to?(:to_ary)
-      assert schedule.playing_surfaces.respond_to?(:to_ary)
-      assert schedule.start_date.is_a?(Date)
-      assert schedule.shuffle_initial_order
-      assert schedule.optimize
-      assert schedule.wdays.select{|w| (0..6).member? w} == schedule.wdays
-      assert schedule.exclude_dates.empty?
+  include RRSchedule
+  context "new instance without params" do
+    setup {@s= Schedule.new}
+    should "have default values for some options" do
+      assert_equal 1, @s.cycles
+      assert @s.shuffle
+      assert_equal Date.today, @s.start_date
+      assert_equal [], @s.exclude_dates
     end
-    
-    should "have a dummy team when number of teams is odd" do
-      schedule = RRSchedule::Schedule.new(:teams => Array(1..9))      
-      assert schedule.teams.size == 10
-      assert schedule.teams.member?(:dummy), "There should always be a :dummy team when the nbr of teams is odd"
-    end
-    
-    should "not have a dummy team when number of teams is even" do
-      schedule = RRSchedule::Schedule.new(:teams => Array(1..6))      
-      assert schedule.teams.size == 6
-      assert !schedule.teams.member?(:dummy), "There should never be a :dummy team when the nbr of teams is even"
-    end
-    
-    should "not have a team named :dummy in the initial array" do
-      assert_raise RuntimeError do
-        schedule = RRSchedule::Schedule.new(
-          :teams => Array(1..4) << :dummy
-        )
-      end
-    end
-    
-    should "not have game times that cannot convert to valid DateTime objects" do
-      assert_raise RuntimeError do
-        schedule = RRSchedule::Schedule.new(
-          :teams => Array(1..4),
-          :game_times => ["10:00 AM", "13:00", "bonjour"]
-        )
-      end      
-    end
-    
-    should "not have wdays that are not between 0 and 6" do
-      assert_raise RuntimeError do
-        schedule = RRSchedule::Schedule.new(
-          :wdays => [2,7]
-        )
-      end      
-    end
-    
-    should "automatically convert game times and playing surface to arrays" do
-      schedule = RRSchedule::Schedule.new(
-        :teams => Array(1..4),
-        :game_times => "10:00 AM",
-        :playing_surfaces => "the only one"
-      )
-      
-      assert_equal [DateTime.parse("10:00 AM")], schedule.game_times
-      assert_equal ["the only one"], schedule.playing_surfaces
-    end
-    
-    should "have at least two teams" do
-      assert_raise RuntimeError do
-        schedule = RRSchedule::Schedule.new(:teams => [1])      
-      end
-    end
-    
-    should "have default teams if non was specified" do
-      schedule = RRSchedule::Schedule.new
-      assert schedule.teams.size > 1
-    end    
-    
-    should "not have a team that is specified twice" do
-      assert_raise RuntimeError do
-        schedule = RRSchedule::Schedule.new(:teams => %w(a a b c d e f g h i))
-      end
-      
-    end    
   end
-  
-  context "Any valid schedule" do
-    setup do
-      @s = RRSchedule::Schedule.new(
-        :teams => %w(a b c d e f g h i j l m),
-        :playing_surfaces => %w(one two),
-        :game_times => ["10:00 AM", "13:00 PM"]
-      )
+
+  context "no teams" do
+    setup {@s = Schedule.new(:rules => [Rule.new(:wday => 1, :gt => ["7:00PM"], :ps => %w(one two))])}
+    should "raise an exception" do
+      exception = assert_raise(RuntimeError){@s.generate}
+      assert_equal "You need to specify at least 1 team", exception.message
+    end
+  end
+
+  context "no flight" do
+    setup{@s=Schedule.new(:teams => %w(1 2 3 4 5 6), :rules => some_rules)}
+    should "be wrapped into a single flight in the normalized array" do
+      @s.generate
+      assert_equal [%w(1 2 3 4 5 6)], @s.flights
     end
 
-    should "have gamedays that respect the wdays attribute" do
-      @s.wdays = [3,5]
-      @s.generate
-    
+    should "not modify the original array" do
+      assert_equal %w(1 2 3 4 5 6), @s.teams
+    end
+  end
+
+  context "odd number of teams without flight" do
+    setup {@s=Schedule.new(:teams => %w(1 2 3 4 5),:rules => some_rules).generate}
+    should "add a dummy competitor in the created flight" do
+      assert_equal 1, @s.flights.size
+      assert_equal 6, @s.flights.first.size
+      assert @s.flights.first.include?(:dummy)
+    end
+
+    should "not modify the original array" do
+      assert_equal 5, @s.teams.size
+      assert !@s.teams.include?(:dummy)
+    end
+  end
+
+
+  context "extra available resources" do
+    setup do
+      @s = Schedule.new(
+        :teams => %w(a1 a2 a3 a4 a5),
+        :rules => [
+          Rule.new(
+            :wday => 3,
+            :gt => ["7:00PM", "9:00PM"],
+            :ps => %w(one two three four)
+          )
+        ]
+      ).generate
+    end
+
+    should "have a maximum of (teams/2) games per day" do
       @s.gamedays.each do |gd|
-        assert [3,5].include?(gd.date.wday), "wday is #{gd.date.wday.to_s} but should be 3 or 5"
-      end
-    end      
-    
-    context "with the option optimize set to true" do
-      should "have at most (playing_surfaces*game_times) games per gameday" do
-        @s.generate                    
-        assert @s.gamedays.first.games.size == (@s.playing_surfaces.size * @s.game_times.size)
+        assert gd.games.size <= @s.teams.size/2
       end
     end
-    
-    context "with the option optimize set to false" do
-      setup do
-        @s.optimize = false
-      end
-      
-      should "never have more than (number of teams / 2) games per gameday" do
-        @s.teams = %w(only four teams here)
-        @s.generate          
-        assert @s.gamedays.first.games.size == @s.teams.size / 2
+
+    should "not have a team that play more than once on a single day" do
+      @s.gamedays.each do |gd|
+        day_teams = gd.games.collect{|g| [g.team_a,g.team_b]}.flatten
+        unique_day_teams = day_teams.uniq
+        assert_equal day_teams.size, unique_day_teams.size
       end
     end
-    
-    context "with an odd number of teams" do
-      setup do
-        @s = RRSchedule::Schedule.new(
-          :teams => %w(a b c d e f g h i j l),
-          :playing_surfaces => %w(one two),
-          :game_times => ["10:00 AM", "13:00 PM"]
-        ).generate
-      end  
-      
-      should "be a valid round-robin" do
-        assert @s.round_robin?
-      end
-      
-      should "not have any :dummy teams in the final schedule" do
-        assert @s.gamedays.collect{|gd| gd.games}.flatten.select{
-          |g| [g.team_a,g.team_b].include?(:dummy)
-        }.size == 0
+  end
+
+
+  context "multi flights" do
+    setup do
+      @s = Schedule.new(
+        :teams => [
+          %w(A1 A2 A3 A4 A5 A6 A7 A8),
+          %w(B1 B2 B3 B4 B5 B6 B7 B8),
+          %w(C1 C2 C3 C4 C5 C6 C7 C8),
+          %w(D1 D2 D3 D4 D5 D6 D7 D8)
+        ],
+
+        :rules => [
+          Rule.new(
+            :wday => 3,
+            :gt => ["7:00PM", "9:00PM"],
+            :ps => ["one","two"]
+          )
+        ],
+
+        :start_date => Date.parse("2011/01/26"),
+        :exclude_dates => [
+          Date.parse("2011/02/02")
+        ]
+      ).generate
+    end
+
+    should "generate separate round-robins" do
+      assert_equal 4, @s.flights.size
+      4.times { |i| assert @s.round_robin?(i)}
+    end
+
+    should "have a correct total number of games" do
+      assert_equal 112, @s.gamedays.collect{|gd| gd.games.size}.inject{|x,sum| x+sum}
+    end
+
+    should "not have games for a date that is excluded" do
+      assert !@s.gamedays.collect{|gd| gd.date}.include?(Date.parse("2011/02/02"))
+      assert @s.gamedays.collect{|gd| gd.date}.include?(Date.parse("2011/02/09"))
+    end
+  end
+
+  ##### RULES #######
+  should "auto create array for gt and ps" do
+    @s = Schedule.new(
+      :teams => %w(a1 a2 a4 a5),
+      :rules => [
+        Rule.new(:wday => 1, :gt => "7:00PM", :ps => "The Field")
+      ]
+    ).generate
+
+    assert_equal [DateTime.parse("7:00PM")], @s.rules.first.gt
+    assert_equal ["The Field"], @s.rules.first.ps
+  end
+
+  context "no rules specified" do
+    setup {@s = Schedule.new(:teams => %w(a1 a2 a4 a5))}
+    should "raise an exception" do
+      exception = assert_raise(RuntimeError){@s.generate}
+      assert_equal "You need to specify at least 1 rule", exception.message
+    end
+  end
+
+  context "multiple rules on the same weekday" do
+    setup do
+      @s = Schedule.new
+      @s.teams = [%w(a1 a2 a3 a4 a5 a6 a7 a8), %w(b1 b2 b3 b4 b5 b6 b7 b8)]
+      @s.rules = [
+        Rule.new(:wday => 4, :gt => ["7:00PM"], :ps => %w(field#1 field#2)),
+        Rule.new(:wday => 4, :gt => ["9:00PM"], :ps => %w(field#1 field#2 field#3))
+      ]
+      @s.start_date = Date.parse("2011/01/27")
+      @s.generate
+    end
+
+    should "keep games on the same day" do
+      cur_date = @s.start_date
+      @s.gamedays.each_with_index do |gd,i|
+        assert_equal cur_date, gd.date
+
+        #check all days to make sure that our rules are respected. We don't check
+        #the last one because it might not be full (round-robin over)
+        if i<@s.gamedays.size-1
+          assert_equal 5, gd.games.size
+          assert_equal 1, gd.games.select{|g| g.game_time == DateTime.parse("7:00PM") && g.playing_surface == "field#1"}.size
+          assert_equal 1, gd.games.select{|g| g.game_time == DateTime.parse("7:00PM") && g.playing_surface == "field#2"}.size
+          assert_equal 1, gd.games.select{|g| g.game_time == DateTime.parse("9:00PM") && g.playing_surface == "field#1"}.size
+          assert_equal 1, gd.games.select{|g| g.game_time == DateTime.parse("9:00PM") && g.playing_surface == "field#2"}.size
+          assert_equal 1, gd.games.select{|g| g.game_time == DateTime.parse("9:00PM") && g.playing_surface == "field#3"}.size
+          cur_date += 7
+        end
       end
     end
-    
-    context "with an even number of teams" do
-      setup do
-        @s = RRSchedule::Schedule.new(
-          :teams => %w(a b c d e f g h i j l m),
-          :playing_surfaces => %w(one two),
-          :game_times => ["10:00 AM", "13:00 PM"]
-        ).generate
-      end  
-      
-      should "be a valid round-robin" do
-        assert @s.round_robin?
-      end
-      
-      should "not have any :dummy teams in the final schedule" do
-        assert @s.gamedays.collect{|gd| gd.games}.flatten.select{
-          |g| [g.team_a,g.team_b].include?(:dummy)
-        }.size == 0
-      end        
-    end
-  end  
+  end
+
+  def some_rules
+    [
+      Rule.new(:wday => 1, :gt => "7:00PM", :ps => "one"),
+      Rule.new(:wday => 1, :gt => "8:00PM", :ps => %w(one two))
+    ]
+  end
 end
