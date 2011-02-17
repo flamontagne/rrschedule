@@ -144,7 +144,7 @@ module RRSchedule
 
         #process the next round in the current flight
         if cur_round
-          cur_round.games.each do |game|
+          cur_round.games.shuffle.each do |game|
             unless [game.team_a,game.team_b].include?(:dummy)
               if teams_day[flat_schedule[i][:gamedate]] && (teams_day[flat_schedule[i][:gamedate]].include?(game.team_a) || teams_day[flat_schedule[i][:gamedate]].include?(game.team_b))
                 #team is already playing this day. This can happen if we have flights with different number of teams in it.
