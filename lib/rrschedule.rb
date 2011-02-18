@@ -89,7 +89,7 @@ module RRSchedule
       self.gamedays.each do |gd|
         res << gd.date.strftime("%Y-%m-%d") + "\n"
         res << "==========\n"
-        gd.games.each do |g|
+        gd.games.sort{|g1,g2| g1.gt == g2.gt ? g1.ps <=> g2.ps : g1.gt <=> g2.gt}.each do |g|
           res << "#{g.ta.to_s} VS #{g.tb.to_s} on playing surface #{g.ps} at #{g.gt.strftime("%I:%M %p")}\n"
         end
         res << "\n"
@@ -138,7 +138,7 @@ module RRSchedule
         #process the next round in the current flight
         if cur_round
           cur_round.games.each do |game|
-            place_game(game) unless [game.team_a,game.team_b].include?(:dummy)
+            dispatch_game(game) unless [game.team_a,game.team_b].include?(:dummy)
           end
         end
 
@@ -166,6 +166,58 @@ module RRSchedule
     end
 
 
+    def dispatch_game(game)
+      @cur_rule ||= @rules.select{|r| r.wday >= self.start_date.wday}.first || @rules.first
+      @cur_rule_index ||= @rules.index(@cur_rule)
+
+      @gt_stack ||= @cur_rule.gt.clone
+      @ps_stack ||= @cur_rule.ps.clone.shuffle
+
+      @cur_gt ||= @gt_stack.shift
+      @cur_ps ||= @ps_stack.shift
+      @cur_date ||= next_game_date(self.start_date,@cur_rule.wday)
+      @schedule ||= []
+
+      #if one of the team has already plays at this gamedate, we change rule
+      if @schedule.size>0
+        games_this_date = @schedule.select{|v| v[:gamedate] == @cur_date}
+        if games_this_date.select{|g| [game.team_a,game.team_b].include?(g[:team_a]) || [game.team_a,game.team_b].include?(g[:team_b])}.size >0
+          @cur_rule_index = (@cur_rule_index < @rules.size-1) ? @cur_rule_index+1 : 0
+          @cur_rule = @rules[@cur_rule_index]
+          @gt_stack = @cur_rule.gt.clone
+          @ps_stack = @cur_rule.ps.clone.shuffle
+          @cur_gt = @gt_stack.shift
+          @cur_ps = @ps_stack.shift
+          @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday)
+        end
+      end
+
+      @schedule << {:team_a => game.team_a, :team_b => game.team_b, :gamedate => @cur_date, :ps => @cur_ps, :gt => @cur_gt}
+
+      if !@ps_stack.empty?
+        @cur_ps = @ps_stack.shift
+      else
+        if !@gt_stack.empty?
+          @cur_gt = @gt_stack.shift
+          @ps_stack = @cur_rule.ps.clone.shuffle; @cur_ps = @ps_stack.shift
+        else
+          #PS and GT stack empty... we go to the next rule
+          if @cur_rule_index < @rules.size-1
+            @cur_rule_index += 1
+            #Go to the next date (except if the new rule is for the same weekday)
+            @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday) if @cur_rule.wday != @rules[@cur_rule_index].wday
+          else
+            @cur_rule_index = 0
+            @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday)
+          end
+          @cur_rule = @rules[@cur_rule_index]
+          @gt_stack = @cur_rule.gt.clone; @cur_gt = @gt_stack.shift
+          @ps_stack = @cur_rule.ps.clone.shuffle; @cur_ps = @ps_stack.shift
+        end
+      end
+
+    end
+
     def place_game(game)
       @cur_rule ||= @rules.select{|r| r.wday >= self.start_date.wday}.first || @rules.first
 
@@ -182,7 +234,6 @@ module RRSchedule
       if @schedule.size>0
         games_this_date = @schedule.select{|v| v[:gamedate] == @cur_date}
         if games_this_date.select{|g| [game.team_a,game.team_b].include?(g[:team_a]) || [game.team_a,game.team_b].include?(g[:team_b])}.size >0
-          #puts "CA Y EST LES AMIS"
           @cur_rule_index = (@cur_rule_index < @rules.size-1) ? @cur_rule_index+1 : 0
           @cur_rule = @rules[@cur_rule_index]
           @cur_ps_index=0
@@ -218,53 +269,6 @@ module RRSchedule
       end
     end
 
-
-    def generate_flat_schedule
-      flat_schedule = []
-      games_left = max_games_per_day = day_game_ctr = rule_ctr = 0
-
-      #determine first rule based on the nearest gameday
-      cur_rule  = @rules.select{|r| r.wday >= self.start_date.wday}.first || @rules.first
-      cur_rule_index = @rules.index(cur_rule)
-      cur_date = next_game_date(self.start_date,cur_rule.wday)
-
-      @flights.each do |flight|
-        games_left += @cycles * (flight.include?(:dummy) ? ((flight.size-1)/2.0)*(flight.size-2) : (flight.size/2)*(flight.size-1))
-        max_games_per_day += (flight.include?(:dummy) ? ((flight.size-2)/2.0) : (flight.size-1)/2.0).ceil
-      end
-
-
-      #while there are games to process...
-      while games_left > 0 do
-
-        #add all possible games based on the current rule
-        cur_rule.gt.each do |gt|
-          cur_rule.ps.each do |ps|
-
-            #if there are more physical resources (playing surfaces and game times) for a given day than
-            #we need, we don't use them all (or else some teams would play twice on a single day)
-            if day_game_ctr <= max_games_per_day-1
-              flat_schedule << {:gamedate => cur_date, :gt => gt, :ps => ps}
-              games_left -= 1; day_game_ctr += 1
-            end
-          end
-        end
-
-        last_rule = cur_rule
-        last_date = cur_date
-
-        #Advance to the next rule (if we're at the last one, we go back to the first)
-        cur_rule_index = (cur_rule_index == @rules.size-1) ? 0 : cur_rule_index + 1
-        cur_rule = @rules[cur_rule_index]
-
-        #Go to the next date (except if the new rule is for the same weekday)
-        if cur_rule.wday != last_rule.wday || cur_rule_index == 0
-          cur_date = next_game_date(cur_date+=1,cur_rule.wday)
-          day_game_ctr = 0
-        end
-      end
-      flat_schedule
-    end
 
     #get the next gameday
     def next_game_date(dt,wday)
