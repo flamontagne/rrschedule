@@ -129,41 +129,18 @@ module RRSchedule
     end
 
     #Dispatch games according to available playing surfaces and game times
-    #The flat schedule contains "place holders" for the actual games. Each row contains
-    #a game date, a game time and a playing surface. We then process our rounds one by one
-    #and we put each matchup in the next available slot of the flat schedule
     def dispatch_games(rounds)
-      teams_day = {}
-      flat_schedule = generate_flat_schedule
-
       rounds_copy =  Marshal.load(Marshal.dump(rounds)) #deep clone
-      cur_flight_index = i = 0
+      cur_flight_index = 0
 
       while !rounds_copy.flatten.empty? do
         cur_round = rounds_copy[cur_flight_index].shift
-
         #process the next round in the current flight
         if cur_round
-          cur_round.games.shuffle.each do |game|
-            unless [game.team_a,game.team_b].include?(:dummy)
-              if teams_day[flat_schedule[i][:gamedate]] && (teams_day[flat_schedule[i][:gamedate]].include?(game.team_a) || teams_day[flat_schedule[i][:gamedate]].include?(game.team_b))
-                #team is already playing this day. This can happen if we have flights with different number of teams in it.
-                gamedate = flat_schedule[i][:gamedate]
-                while flat_schedule[i] && flat_schedule[i][:gamedate] == gamedate do
-                  i += 1
-                end
-              end
-
-              flat_schedule[i][:team_a] = game.team_a
-              flat_schedule[i][:team_b] = game.team_b
-              teams_day[flat_schedule[i][:gamedate]] ||= []
-              teams_day[flat_schedule[i][:gamedate]] << game.team_a
-              teams_day[flat_schedule[i][:gamedate]] << game.team_b
-              i += 1
-            end
+          cur_round.games.each do |game|
+            place_game(game) unless [game.team_a,game.team_b].include?(:dummy)
           end
         end
-
 
         if cur_flight_index == @flights.size-1
           cur_flight_index = 0
@@ -172,8 +149,8 @@ module RRSchedule
         end
       end
 
-      #We group our flat schedule by gameday
-      s=flat_schedule.group_by{|fs| fs[:gamedate]}.sort
+      #We group our schedule by gameday
+      s=@schedule.group_by{|fs| fs[:gamedate]}.sort
       s.each do |gamedate,gms|
         games = []
         gms.each do |gm|
@@ -186,7 +163,59 @@ module RRSchedule
         end
         self.gamedays << Gameday.new(:date => gamedate, :games => games)
       end
-      self.gamedays.each { |gd| gd.games.reject! {|g| g.team_a.nil?}}
+    end
+
+
+    def place_game(game)
+      @cur_rule ||= @rules.select{|r| r.wday >= self.start_date.wday}.first || @rules.first
+
+      @cur_rule_index ||= @rules.index(@cur_rule)
+      @cur_gt_index ||= 0
+      @cur_ps_index ||= 0
+
+      @cur_gt = @cur_rule.gt[@cur_gt_index]
+      @cur_ps = @cur_rule.ps[@cur_ps_index]
+      @cur_date ||= next_game_date(self.start_date,@cur_rule.wday)
+      @schedule ||= []
+
+      #if one of the team has already plays at this gamedate, we change rule
+      if @schedule.size>0
+        games_this_date = @schedule.select{|v| v[:gamedate] == @cur_date}
+        if games_this_date.select{|g| [game.team_a,game.team_b].include?(g[:team_a]) || [game.team_a,game.team_b].include?(g[:team_b])}.size >0
+          #puts "CA Y EST LES AMIS"
+          @cur_rule_index = (@cur_rule_index < @rules.size-1) ? @cur_rule_index+1 : 0
+          @cur_rule = @rules[@cur_rule_index]
+          @cur_ps_index=0
+          @cur_gt_index=0
+          @cur_ps = @cur_rule.ps.first
+          @cur_gt = @cur_rule.gt.first
+          @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday)
+        end
+      end
+
+      @schedule << {:team_a => game.team_a, :team_b => game.team_b, :gamedate => @cur_date, :ps => @cur_ps, :gt => @cur_gt}
+
+      if @cur_ps_index < @cur_rule.ps.size-1
+        @cur_ps_index += 1
+      else
+        @cur_ps_index = 0
+
+        if @cur_gt_index < @cur_rule.gt.size-1
+          @cur_gt_index += 1
+        else
+          @cur_gt_index = 0
+
+          if @cur_rule_index < @rules.size-1
+            @cur_rule_index += 1
+            #Go to the next date (except if the new rule is for the same weekday)
+            @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday) if @cur_rule.wday != @rules[@cur_rule_index].wday
+          else
+            @cur_rule_index = 0
+            @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday)
+          end
+          @cur_rule = @rules[@cur_rule_index]
+        end
+      end
     end
 
 

@@ -142,8 +142,8 @@ class TestRrschedule < Test::Unit::TestCase
       @s = Schedule.new
       @s.teams = [%w(a1 a2 a3 a4 a5 a6 a7 a8), %w(b1 b2 b3 b4 b5 b6 b7 b8)]
       @s.rules = [
-        Rule.new(:wday => 4, :gt => ["7:00PM"], :ps => %w(field#1 field#2)),
-        Rule.new(:wday => 4, :gt => ["9:00PM"], :ps => %w(field#1 field#2 field#3))
+        Rule.new(:wday => 4, :gt => ["7:00PM"], :ps => %w(field1 field2)),
+        Rule.new(:wday => 4, :gt => ["9:00PM"], :ps => %w(field1 field2 field3))
       ]
       @s.start_date = Date.parse("2011/01/27")
       @s.generate
@@ -158,11 +158,11 @@ class TestRrschedule < Test::Unit::TestCase
         #the last one because it might not be full (round-robin over)
         if i<@s.gamedays.size-1
           assert_equal 5, gd.games.size
-          assert_equal 1, gd.games.select{|g| g.game_time == DateTime.parse("7:00PM") && g.playing_surface == "field#1"}.size
-          assert_equal 1, gd.games.select{|g| g.game_time == DateTime.parse("7:00PM") && g.playing_surface == "field#2"}.size
-          assert_equal 1, gd.games.select{|g| g.game_time == DateTime.parse("9:00PM") && g.playing_surface == "field#1"}.size
-          assert_equal 1, gd.games.select{|g| g.game_time == DateTime.parse("9:00PM") && g.playing_surface == "field#2"}.size
-          assert_equal 1, gd.games.select{|g| g.game_time == DateTime.parse("9:00PM") && g.playing_surface == "field#3"}.size
+          assert_equal 1, gd.games.select{|g| g.game_time == DateTime.parse("7:00PM") && g.playing_surface == "field1"}.size
+          assert_equal 1, gd.games.select{|g| g.game_time == DateTime.parse("7:00PM") && g.playing_surface == "field2"}.size
+          assert_equal 1, gd.games.select{|g| g.game_time == DateTime.parse("9:00PM") && g.playing_surface == "field1"}.size
+          assert_equal 1, gd.games.select{|g| g.game_time == DateTime.parse("9:00PM") && g.playing_surface == "field2"}.size
+          assert_equal 1, gd.games.select{|g| g.game_time == DateTime.parse("9:00PM") && g.playing_surface == "field3"}.size
           cur_date += 7
         end
       end
