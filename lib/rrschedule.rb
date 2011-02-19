@@ -204,13 +204,14 @@ module RRSchedule
           #PS and GT stack empty... we go to the next rule
           if @cur_rule_index < @rules.size-1
             @cur_rule_index += 1
+            @cur_rule = @rules[@cur_rule_index]            
             #Go to the next date (except if the new rule is for the same weekday)
             @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday) if @cur_rule.wday != @rules[@cur_rule_index].wday
           else
             @cur_rule_index = 0
+            @cur_rule = @rules[@cur_rule_index]            
             @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday)
           end
-          @cur_rule = @rules[@cur_rule_index]
           @gt_stack = @cur_rule.gt.clone; @cur_gt = @gt_stack.shift
           @ps_stack = @cur_rule.ps.clone.shuffle; @cur_ps = @ps_stack.shift
         end
