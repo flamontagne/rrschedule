@@ -203,10 +203,11 @@ module RRSchedule
         else
           #PS and GT stack empty... we go to the next rule
           if @cur_rule_index < @rules.size-1
+            last_rule=@cur_rule
             @cur_rule_index += 1
             @cur_rule = @rules[@cur_rule_index]            
             #Go to the next date (except if the new rule is for the same weekday)
-            @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday) if @cur_rule.wday != @rules[@cur_rule_index].wday
+            @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday) if last_rule.wday != @cur_rule.wday
           else
             @cur_rule_index = 0
             @cur_rule = @rules[@cur_rule_index]            

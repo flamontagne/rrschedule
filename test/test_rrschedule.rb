@@ -98,21 +98,36 @@ class TestRrschedule < Test::Unit::TestCase
         :exclude_dates => [
           Date.parse("2011/02/02")
         ]
-      ).generate
+      )
     end
 
     should "generate separate round-robins" do
+      @s.generate
       assert_equal 4, @s.flights.size
       4.times { |i| assert @s.round_robin?(i)}
     end
 
     should "have a correct total number of games" do
+      @s.generate    
       assert_equal 112, @s.gamedays.collect{|gd| gd.games.size}.inject{|x,sum| x+sum}
     end
 
     should "not have games for a date that is excluded" do
+      @s.generate    
       assert !@s.gamedays.collect{|gd| gd.date}.include?(Date.parse("2011/02/02"))
       assert @s.gamedays.collect{|gd| gd.date}.include?(Date.parse("2011/02/09"))
+    end
+    
+    should "respect rules" do
+      @s.teams << %w(E1 E2 E3 E4 E5 E6 E7 E8)
+      @s.rules << Rule.new(:wday => 4, :gt => "7:00PM", :ps => %w(one two))
+      @s.generate
+      
+      wday = 3
+      @s.gamedays.each do |gd|
+        assert_equal wday, gd.date.wday
+        wday = (wday==3) ? 4 : 3
+      end
     end
   end
 
