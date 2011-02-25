@@ -40,7 +40,9 @@ module RRSchedule
             team_b = t.reverse!.shift
             t.reverse!
 
-            matchup = {:team_a => team_a, :team_b => team_b}
+
+            x = [team_a,team_b].shuffle
+            matchup = {:team_a => x[0], :team_b => x[1]}
             games << matchup
           end
           #done processing round
@@ -205,12 +207,12 @@ module RRSchedule
           if @cur_rule_index < @rules.size-1
             last_rule=@cur_rule
             @cur_rule_index += 1
-            @cur_rule = @rules[@cur_rule_index]            
+            @cur_rule = @rules[@cur_rule_index]
             #Go to the next date (except if the new rule is for the same weekday)
             @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday) if last_rule.wday != @cur_rule.wday
           else
             @cur_rule_index = 0
-            @cur_rule = @rules[@cur_rule_index]            
+            @cur_rule = @rules[@cur_rule_index]
             @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday)
           end
           @gt_stack = @cur_rule.gt.clone; @cur_gt = @gt_stack.shift
