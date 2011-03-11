@@ -221,59 +221,7 @@ module RRSchedule
       end
 
     end
-
-    def place_game(game)
-      @cur_rule ||= @rules.select{|r| r.wday >= self.start_date.wday}.first || @rules.first
-
-      @cur_rule_index ||= @rules.index(@cur_rule)
-      @cur_gt_index ||= 0
-      @cur_ps_index ||= 0
-
-      @cur_gt = @cur_rule.gt[@cur_gt_index]
-      @cur_ps = @cur_rule.ps[@cur_ps_index]
-      @cur_date ||= next_game_date(self.start_date,@cur_rule.wday)
-      @schedule ||= []
-
-      #if one of the team has already plays at this gamedate, we change rule
-      if @schedule.size>0
-        games_this_date = @schedule.select{|v| v[:gamedate] == @cur_date}
-        if games_this_date.select{|g| [game.team_a,game.team_b].include?(g[:team_a]) || [game.team_a,game.team_b].include?(g[:team_b])}.size >0
-          @cur_rule_index = (@cur_rule_index < @rules.size-1) ? @cur_rule_index+1 : 0
-          @cur_rule = @rules[@cur_rule_index]
-          @cur_ps_index=0
-          @cur_gt_index=0
-          @cur_ps = @cur_rule.ps.first
-          @cur_gt = @cur_rule.gt.first
-          @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday)
-        end
-      end
-
-      @schedule << {:team_a => game.team_a, :team_b => game.team_b, :gamedate => @cur_date, :ps => @cur_ps, :gt => @cur_gt}
-
-      if @cur_ps_index < @cur_rule.ps.size-1
-        @cur_ps_index += 1
-      else
-        @cur_ps_index = 0
-
-        if @cur_gt_index < @cur_rule.gt.size-1
-          @cur_gt_index += 1
-        else
-          @cur_gt_index = 0
-
-          if @cur_rule_index < @rules.size-1
-            @cur_rule_index += 1
-            #Go to the next date (except if the new rule is for the same weekday)
-            @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday) if @cur_rule.wday != @rules[@cur_rule_index].wday
-          else
-            @cur_rule_index = 0
-            @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday)
-          end
-          @cur_rule = @rules[@cur_rule_index]
-        end
-      end
-    end
-
-
+    
     #get the next gameday
     def next_game_date(dt,wday)
       dt += 1 until wday == dt.wday && !self.exclude_dates.include?(dt)
