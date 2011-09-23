@@ -53,3 +53,10 @@ In other words, you will be able to do something like this:
     schedule.rules << Rule.new(
       ... #same rules apply for all 32 teams
     )
+
+## Playing locations should be distributed evenly amongst competitors (branch created on 2011/09/23)
+
+At the moment the playing locations are distributed randomly for every matchup. It means that one team
+might play a lot more often on a playing field than on another.
+
+The work in this branch will try to fix this issue. 
