@@ -22,9 +22,10 @@ module RRSchedule
       raise "You need to specify at least 1 team" if @teams.nil? || @teams.empty?
       raise "You need to specify at least 1 rule" if @rules.nil? || @rules.empty?
       arrange_flights
-      @stats = {}
 
-      @teams.each do |t|
+
+      @stats = {}
+      @teams.flatten.each do |t|
         @stats[t] = {
           :gt => {},
           :ps => {}
@@ -45,6 +46,8 @@ module RRSchedule
       @rounds = []
 
       @flights.each_with_index do |teams,flight_id|
+
+
         current_cycle = current_round = 0
         teams = teams.sort_by{rand} if @shuffle
 
