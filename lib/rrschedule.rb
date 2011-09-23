@@ -22,6 +22,25 @@ module RRSchedule
       raise "You need to specify at least 1 team" if @teams.nil? || @teams.empty?
       raise "You need to specify at least 1 rule" if @rules.nil? || @rules.empty?
       arrange_flights
+      @stats = {}
+
+      @teams.each do |t|
+        @stats[t] = {
+          :gt => {},
+          :ps => {}
+        }
+
+        @stats[t][:gt] = {}
+        all_gt.each do |gt|
+          @stats[t][:gt][gt] = 0
+        end
+
+        @stats[t][:ps] = {}
+        all_ps.each do |ps|
+          @stats[t][:ps][ps] = 0
+        end
+      end
+
       @gamedays = []
       @rounds = []
 
@@ -41,15 +60,18 @@ module RRSchedule
             t.reverse!
 
 
-            x = [team_a,team_b].shuffle
-            matchup = {:team_a => x[0], :team_b => x[1]}
+            x = [team_a,team_b] #.shuffle
+
+            matchup = {:team_a => x[0], :team_b => x[1], :home_team_index => self.teams.index(x[0])}
             games << matchup
           end
+          games = games.sort_by {|g| g[:home_team_index]}
+
           #done processing round
 
           current_round += 1
 
-          #Team rotation
+          #Team rotation (the first team is fixed)
           teams = teams.insert(1,teams.delete_at(teams.size-1))
 
           #add the round in memory
@@ -167,61 +189,70 @@ module RRSchedule
       end
     end
 
+    def get_best_gt(game)
+      x = {}
+      gt_left = @gt_ps_avail.reject{|k,v| v.empty?}
+      gt_left.each_key do |gt|
+        x[gt] = @stats[game.team_a][:gt][gt] + @stats[game.team_b][:gt][gt]
+      end
+      x.sort_by{|k,v| v}.first[0]
+    end
+
+    def get_best_ps(game,gt)
+      x = {}
+      @gt_ps_avail[gt].each do |ps|
+        x[ps] = @stats[game.team_a][:ps][ps] + @stats[game.team_b][:ps][ps]
+      end
+      x.sort_by{|k,v| v}.first[0]
+    end
 
     def dispatch_game(game)
-      @cur_rule ||= @rules.select{|r| r.wday >= self.start_date.wday}.first || @rules.first
-      @cur_rule_index ||= @rules.index(@cur_rule)
+      if @cur_rule.nil?
+        @cur_rule = @rules.select{|r| r.wday >= self.start_date.wday}.first || @rules.first
+        @cur_rule_index = @rules.index(@cur_rule)
 
-      @gt_stack ||= @cur_rule.gt.clone
-      @ps_stack ||= @cur_rule.ps.clone.shuffle
+        @gt_ps_avail = {}
+        @cur_rule.gt.each do |gt|
+          @gt_ps_avail[gt] = @cur_rule.ps.clone
+        end
+      end
 
-      @cur_gt ||= @gt_stack.shift
-      @cur_ps ||= @ps_stack.shift
+      @cur_gt = get_best_gt(game)
+      @cur_ps = get_best_ps(game,@cur_gt)
+
+      @stats[game.team_a][:gt][@cur_gt] += 1
+      @stats[game.team_a][:ps][@cur_ps] += 1
+      @stats[game.team_b][:gt][@cur_gt] += 1
+      @stats[game.team_b][:ps][@cur_ps] += 1
+
+      @gt_ps_avail[@cur_gt].delete(@cur_ps)
       @cur_date ||= next_game_date(self.start_date,@cur_rule.wday)
       @schedule ||= []
 
-      #if one of the team has already plays at this gamedate, we change rule
-      if @schedule.size>0
-        games_this_date = @schedule.select{|v| v[:gamedate] == @cur_date}
-        if games_this_date.select{|g| [game.team_a,game.team_b].include?(g[:team_a]) || [game.team_a,game.team_b].include?(g[:team_b])}.size >0
-          @cur_rule_index = (@cur_rule_index < @rules.size-1) ? @cur_rule_index+1 : 0
-          @cur_rule = @rules[@cur_rule_index]
-          @gt_stack = @cur_rule.gt.clone
-          @ps_stack = @cur_rule.ps.clone.shuffle
-          @cur_gt = @gt_stack.shift
-          @cur_ps = @ps_stack.shift
-          @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday)
-        end
-      end
-
       @schedule << {:team_a => game.team_a, :team_b => game.team_b, :gamedate => @cur_date, :ps => @cur_ps, :gt => @cur_gt}
 
-      if !@ps_stack.empty?
-        @cur_ps = @ps_stack.shift
-      else
-        if !@gt_stack.empty?
-          @cur_gt = @gt_stack.shift
-          @ps_stack = @cur_rule.ps.clone.shuffle; @cur_ps = @ps_stack.shift
+      x = @gt_ps_avail.reject{|k,v| v.empty?}
+      if x.empty?
+        #nothing left, our rule is over
+        if @cur_rule_index < @rules.size-1
+          last_rule=@cur_rule
+          @cur_rule_index += 1
+          @cur_rule = @rules[@cur_rule_index]
+          #Go to the next date (except if the new rule is for the same weekday)
+          @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday) if last_rule.wday != @cur_rule.wday
         else
-          #PS and GT stack empty... we go to the next rule
-          if @cur_rule_index < @rules.size-1
-            last_rule=@cur_rule
-            @cur_rule_index += 1
-            @cur_rule = @rules[@cur_rule_index]
-            #Go to the next date (except if the new rule is for the same weekday)
-            @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday) if last_rule.wday != @cur_rule.wday
-          else
-            @cur_rule_index = 0
-            @cur_rule = @rules[@cur_rule_index]
-            @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday)
-          end
-          @gt_stack = @cur_rule.gt.clone; @cur_gt = @gt_stack.shift
-          @ps_stack = @cur_rule.ps.clone.shuffle; @cur_ps = @ps_stack.shift
+          @cur_rule_index = 0
+          @cur_rule = @rules[@cur_rule_index]
+          @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday)
         end
-      end
+        @gt_ps_avail = {}
+        @cur_rule.gt.each do |gt|
+          @gt_ps_avail[gt] = @cur_rule.ps.clone
+        end
 
+      end
     end
-    
+
     #get the next gameday
     def next_game_date(dt,wday)
       dt += 1 until wday == dt.wday && !self.exclude_dates.include?(dt)
@@ -235,6 +266,22 @@ module RRSchedule
         res << gd.games.select {|g| (g.team_a == team_a && g.team_b == team_b) || (g.team_a == team_b && g.team_b == team_a)}
       end
       res.flatten
+    end
+
+    def all_gt
+      gt = []
+      @rules.each do |r|
+        gt = gt.concat(r.gt)
+      end
+      gt.flatten.uniq
+    end
+
+    def all_ps
+      ps = []
+      @rules.each do |r|
+        ps = ps.concat(r.ps)
+      end
+      ps.flatten.uniq
     end
   end
 
