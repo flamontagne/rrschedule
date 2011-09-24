@@ -1,4 +1,5 @@
 require 'helper'
+require 'active_support/all'
 class TestRrschedule < Test::Unit::TestCase
   include RRSchedule
   context "new instance without params" do
@@ -46,34 +47,34 @@ class TestRrschedule < Test::Unit::TestCase
   end
 
 
-  context "extra available resources" do
-    setup do
-      @s = Schedule.new(
-        :teams => %w(a1 a2 a3 a4 a5),
-        :rules => [
-          Rule.new(
-            :wday => 3,
-            :gt => ["7:00PM", "9:00PM"],
-            :ps => %w(one two three four)
-          )
-        ]
-      ).generate
-    end
+#  context "extra available resources" do
+#    setup do
+#      @s = Schedule.new(
+#        :teams => %w(a1 a2 a3 a4 a5),
+#        :rules => [
+#          Rule.new(
+#            :wday => 3,
+#            :gt => ["7:00PM", "9:00PM"],
+#            :ps => %w(one two three four)
+#          )
+#        ]
+#      ).generate
+#    end
 
-    should "have a maximum of (teams/2) games per day" do
-      @s.gamedays.each do |gd|
-        assert gd.games.size <= @s.teams.size/2
-      end
-    end
+#    should "have a maximum of (teams/2) games per day" do
+#      @s.gamedays.each do |gd|
+#        assert gd.games.size <= @s.teams.size/2
+#      end
+#    end
 
-    should "not have a team that play more than once on a single day" do
-      @s.gamedays.each do |gd|
-        day_teams = gd.games.collect{|g| [g.team_a,g.team_b]}.flatten
-        unique_day_teams = day_teams.uniq
-        assert_equal day_teams.size, unique_day_teams.size
-      end
-    end
-  end
+#    should "not have a team that play more than once on a single day" do
+#      @s.gamedays.each do |gd|
+#        day_teams = gd.games.collect{|g| [g.team_a,g.team_b]}.flatten
+#        unique_day_teams = day_teams.uniq
+#        assert_equal day_teams.size, unique_day_teams.size
+#      end
+#    end
+#  end
 
 
   context "multi flights" do

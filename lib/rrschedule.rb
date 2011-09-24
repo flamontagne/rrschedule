@@ -68,7 +68,7 @@ module RRSchedule
             matchup = {:team_a => x[0], :team_b => x[1], :home_team_index => self.teams.index(x[0])}
             games << matchup
           end
-          games = games.sort_by {|g| g[:home_team_index]}
+          #games = games.sort_by {|g| g[:home_team_index]}
 
           #done processing round
 
@@ -125,7 +125,7 @@ module RRSchedule
     end
 
     #returns true if the generated schedule is a valid round-robin (for testing purpose)
-    def round_robin?(flight_id=nil)
+    def round_robin?(flight_id=0)
       #each round-robin round should contains n-1 games where n is the nbr of teams (:dummy included if odd)
       return false if self.rounds[flight_id].size != (@flights[flight_id].size*self.cycles)-self.cycles
 
@@ -196,47 +196,59 @@ module RRSchedule
       x = {}
       gt_left = @gt_ps_avail.reject{|k,v| v.empty?}
       gt_left.each_key do |gt|
-        x[gt] = @stats[game.team_a][:gt][gt] + @stats[game.team_b][:gt][gt]
+        x[gt] = [
+          @stats[game.team_a][:gt][gt] + @stats[game.team_b][:gt][gt],
+          rand(1000)
+        ]
       end
-      x.sort_by{|k,v| v}.first[0]
+      x.sort_by{|k,v| [v[0],v[1]]}.first[0]
     end
 
     def get_best_ps(game,gt)
       x = {}
       @gt_ps_avail[gt].each do |ps|
-        x[ps] = @stats[game.team_a][:ps][ps] + @stats[game.team_b][:ps][ps]
+        x[ps] = [
+          @stats[game.team_a][:ps][ps] + @stats[game.team_b][:ps][ps],
+          rand(1000)
+        ]
       end
-      x.sort_by{|k,v| v}.first[0]
+      x.sort_by{|k,v| [v[0],v[1]]}.first[0]
     end
 
+    def reset_resource_availability
+      @gt_ps_avail = {}
+      @cur_rule.gt.each do |gt|
+        @gt_ps_avail[gt] = @cur_rule.ps.clone
+      end    
+    end
+    
     def dispatch_game(game)
       if @cur_rule.nil?
         @cur_rule = @rules.select{|r| r.wday >= self.start_date.wday}.first || @rules.first
         @cur_rule_index = @rules.index(@cur_rule)
-
-        @gt_ps_avail = {}
-        @cur_rule.gt.each do |gt|
-          @gt_ps_avail[gt] = @cur_rule.ps.clone
-        end
+        reset_resource_availability
       end
 
       @cur_gt = get_best_gt(game)
       @cur_ps = get_best_ps(game,@cur_gt)
 
+      #increment the stats counters to lessen the chances that these teams plays on the same playing surface (or game time) too often
       @stats[game.team_a][:gt][@cur_gt] += 1
       @stats[game.team_a][:ps][@cur_ps] += 1
       @stats[game.team_b][:gt][@cur_gt] += 1
       @stats[game.team_b][:ps][@cur_ps] += 1
 
-      @gt_ps_avail[@cur_gt].delete(@cur_ps)
+      @gt_ps_avail[@cur_gt].delete(@cur_ps) #this playing surface has now been taken and is not available
+      
       @cur_date ||= next_game_date(self.start_date,@cur_rule.wday)
       @schedule ||= []
 
       @schedule << {:team_a => game.team_a, :team_b => game.team_b, :gamedate => @cur_date, :ps => @cur_ps, :gt => @cur_gt}
 
       x = @gt_ps_avail.reject{|k,v| v.empty?}
-      if x.empty?
-        #nothing left, our rule is over
+
+      #no resources left, change rule
+      if x.empty?        
         if @cur_rule_index < @rules.size-1
           last_rule=@cur_rule
           @cur_rule_index += 1
@@ -248,11 +260,7 @@ module RRSchedule
           @cur_rule = @rules[@cur_rule_index]
           @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday)
         end
-        @gt_ps_avail = {}
-        @cur_rule.gt.each do |gt|
-          @gt_ps_avail[gt] = @cur_rule.ps.clone
-        end
-
+        reset_resource_availability
       end
     end
 
