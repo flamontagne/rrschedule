@@ -242,6 +242,20 @@ module RRSchedule
       
       @cur_date ||= next_game_date(self.start_date,@cur_rule.wday)
       @schedule ||= []
+      
+      #if one of the team has already plays at this gamedate, we change rule
+      if @schedule.size>0
+        games_this_date = @schedule.select{|v| v[:gamedate] == @cur_date}
+        if games_this_date.select{|g| [game.team_a,game.team_b].include?(g[:team_a]) || [game.team_a,game.team_b].include?(g[:team_b])}.size >0
+          @cur_rule_index = (@cur_rule_index < @rules.size-1) ? @cur_rule_index+1 : 0
+          @cur_rule = @rules[@cur_rule_index]
+          @gt_stack = @cur_rule.gt.clone
+          @ps_stack = @cur_rule.ps.clone.shuffle
+          @cur_gt = @gt_stack.shift
+          @cur_ps = @ps_stack.shift
+          @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday)
+        end
+      end      
 
       @schedule << {:team_a => game.team_a, :team_b => game.team_b, :gamedate => @cur_date, :ps => @cur_ps, :gt => @cur_gt}
 
