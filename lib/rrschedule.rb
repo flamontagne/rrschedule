@@ -219,9 +219,9 @@ module RRSchedule
       @gt_ps_avail = {}
       @cur_rule.gt.each do |gt|
         @gt_ps_avail[gt] = @cur_rule.ps.clone
-      end    
+      end
     end
-    
+
     def dispatch_game(game)
       if @cur_rule.nil?
         @cur_rule = @rules.select{|r| r.wday >= self.start_date.wday}.first || @rules.first
@@ -238,11 +238,9 @@ module RRSchedule
       @stats[game.team_b][:gt][@cur_gt] += 1
       @stats[game.team_b][:ps][@cur_ps] += 1
 
-      @gt_ps_avail[@cur_gt].delete(@cur_ps) #this playing surface has now been taken and is not available
-      
       @cur_date ||= next_game_date(self.start_date,@cur_rule.wday)
       @schedule ||= []
-      
+
       #if one of the team has already plays at this gamedate, we change rule
       if @schedule.size>0
         games_this_date = @schedule.select{|v| v[:gamedate] == @cur_date}
@@ -251,17 +249,18 @@ module RRSchedule
           @cur_rule = @rules[@cur_rule_index]
           reset_resource_availability
           @cur_gt = get_best_gt(game)
-          @cur_ps = get_best_ps(game,@cur_gt)          
-          @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday)          
+          @cur_ps = get_best_ps(game,@cur_gt)
+          @cur_date = next_game_date(@cur_date+=1,@cur_rule.wday)
         end
-      end      
+      end
 
       @schedule << {:team_a => game.team_a, :team_b => game.team_b, :gamedate => @cur_date, :ps => @cur_ps, :gt => @cur_gt}
+      @gt_ps_avail[@cur_gt].delete(@cur_ps) #this playing surface has now been taken and is not available
 
       x = @gt_ps_avail.reject{|k,v| v.empty?}
 
       #no resources left, change rule
-      if x.empty?        
+      if x.empty?
         if @cur_rule_index < @rules.size-1
           last_rule=@cur_rule
           @cur_rule_index += 1
