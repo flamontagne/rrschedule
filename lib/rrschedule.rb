@@ -21,33 +21,14 @@ module RRSchedule
     def generate(params={})
       raise "You need to specify at least 1 team" if @teams.nil? || @teams.empty?
       raise "You need to specify at least 1 rule" if @rules.nil? || @rules.empty?
+
       arrange_flights
+      init_stats
 
+      @gamedays = []; @rounds = []
 
-      @stats = {}
-      @teams.flatten.each do |t|
-        @stats[t] = {
-          :gt => {},
-          :ps => {}
-        }
-
-        @stats[t][:gt] = {}
-        all_gt.each do |gt|
-          @stats[t][:gt][gt] = 0
-        end
-
-        @stats[t][:ps] = {}
-        all_ps.each do |ps|
-          @stats[t][:ps][ps] = 0
-        end
-      end
-
-      @gamedays = []
-      @rounds = []
 
       @flights.each_with_index do |teams,flight_id|
-
-
         current_cycle = current_round = 0
         teams = teams.sort_by{rand} if @shuffle
 
@@ -62,14 +43,11 @@ module RRSchedule
             team_b = t.reverse!.shift
             t.reverse!
 
+            x = [team_a,team_b].shuffle
 
-            x = [team_a,team_b] #.shuffle
-
-            matchup = {:team_a => x[0], :team_b => x[1], :home_team_index => self.teams.index(x[0])}
+            matchup = {:team_a => x[0], :team_b => x[1]}
             games << matchup
           end
-          #games = games.sort_by {|g| g[:home_team_index]}
-
           #done processing round
 
           current_round += 1
@@ -95,11 +73,7 @@ module RRSchedule
           #have we completed a full round-robin for the current flight?
           if current_round == teams.size-1
             current_cycle += 1
-
-            if current_cycle < self.cycles
-              current_round = 0
-              teams = teams.sort_by{rand} if @shuffle
-            end
+            current_round = 0 if current_cycle < self.cycles
           end
 
         end until current_round == teams.size-1 && current_cycle==self.cycles
@@ -291,21 +265,20 @@ module RRSchedule
       res.flatten
     end
 
-    def all_gt
-      gt = []
-      @rules.each do |r|
-        gt = gt.concat(r.gt)
+    #Count the number of times each team plays on a given playing surface and at what time. That way
+    #we can balance the available playing surfaces/game times among competitors.
+    def init_stats
+      @stats = {}
+      @teams.flatten.each do |t|
+        @stats[t] = {:gt => {}, :ps => {}}
+        all_gt.each { |gt| @stats[t][:gt][gt] = 0 }
+        all_ps.each { |ps| @stats[t][:ps][ps] = 0 }
       end
-      gt.flatten.uniq
     end
 
-    def all_ps
-      ps = []
-      @rules.each do |r|
-        ps = ps.concat(r.ps)
-      end
-      ps.flatten.uniq
-    end
+    #returns an array of all available game times / playing surfaces, all rules included.
+    def all_gt; @rules.collect{|r| r.gt}.flatten.uniq; end
+    def all_ps; @rules.collect{|r| r.ps}.flatten.uniq; end
   end
 
   class Gameday
@@ -315,12 +288,10 @@ module RRSchedule
       self.date = params[:date]
       self.games = params[:games] || []
     end
-
   end
 
   class Rule
     attr_accessor :wday, :gt, :ps
-
 
     def initialize(params)
       self.wday = params[:wday]
