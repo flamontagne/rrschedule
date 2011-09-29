@@ -8,7 +8,7 @@ module RRSchedule
 
     def initialize(params={})
       @gamedays = []
-      self.teams = params[:teams] if params[:teams]
+      self.teams = params[:teams] || []
       self.cycles = params[:cycles] || 1
       self.shuffle = params[:shuffle].nil? ? true : params[:shuffle]
       self.exclude_dates = params[:exclude_dates] || []
