@@ -4,13 +4,15 @@
 module RRSchedule
   class Schedule
     attr_reader :flights, :rounds, :gamedays
-    attr_accessor :teams, :rules, :cycles, :start_date, :exclude_dates,:shuffle
+    attr_accessor :teams, :rules, :cycles, :start_date, :exclude_dates,:shuffle, :balanced_gt, :balanced_ps
 
     def initialize(params={})
       @gamedays = []
       self.teams = params[:teams] || []
       self.cycles = params[:cycles] || 1
       self.shuffle = params[:shuffle].nil? ? true : params[:shuffle]
+      self.balanced_gt = params[:balanced_gt].nil? ? true : params[:balanced_gt]
+      self.balanced_ps = params[:balanced_ps].nil? ? true : params[:balanced_ps]      
       self.exclude_dates = params[:exclude_dates] || []
       self.start_date = params[:start_date] || Date.today
       self.rules = params[:rules] || []
@@ -232,24 +234,34 @@ module RRSchedule
     def get_best_gt(game)
       x = {}
       gt_left = @gt_ps_avail.reject{|k,v| v.empty?}
-      gt_left.each_key do |gt|
-        x[gt] = [
-          @stats[game.team_a][:gt][gt] + @stats[game.team_b][:gt][gt],
-          rand(1000)
-        ]
+      
+      if self.balanced_gt
+        gt_left.each_key do |gt|
+          x[gt] = [
+            @stats[game.team_a][:gt][gt] + @stats[game.team_b][:gt][gt],
+            rand(1000)
+          ]
+        end
+        x.sort_by{|k,v| [v[0],v[1]]}.first[0]
+      else
+        gt_left.sort.first[0]
       end
-      x.sort_by{|k,v| [v[0],v[1]]}.first[0]
     end
 
     def get_best_ps(game,gt)
       x = {}
-      @gt_ps_avail[gt].each do |ps|
-        x[ps] = [
-          @stats[game.team_a][:ps][ps] + @stats[game.team_b][:ps][ps],
-          rand(1000)
-        ]
+      
+      if self.balanced_ps
+        @gt_ps_avail[gt].each do |ps|
+          x[ps] = [
+            @stats[game.team_a][:ps][ps] + @stats[game.team_b][:ps][ps],
+            rand(1000)
+          ]
+        end
+        x.sort_by{|k,v| [v[0],v[1]]}.first[0]
+      else
+        @gt_ps_avail[gt].first[0]
       end
-      x.sort_by{|k,v| [v[0],v[1]]}.first[0]
     end
 
     def reset_resource_availability

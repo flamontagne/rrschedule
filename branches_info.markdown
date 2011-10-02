@@ -60,3 +60,11 @@ At the moment the playing locations are distributed randomly for every matchup. 
 might play a lot more often on a playing field than on another.
 
 The work in this branch will try to fix this issue. 
+
+## Optional balancing for Game Times (branch crated on 2011/10/02)
+
+I created this branch to solve a very specific case. When you generate a schedule with multiple divisions, you generally want that all
+teams of a given division plays at the same game times. (e.g. Division A plays at 7:00, B plays at 9:00 and so on). However with the new 
+balancing feature (see 2011/09/23 branch), it is no longer possible to achieve this.
+
+I will add options balanced_gt and balanced_ps, both true by default.
