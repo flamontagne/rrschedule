@@ -4,7 +4,7 @@
 module RRSchedule
   class Schedule
     attr_reader :flights, :rounds, :gamedays
-    attr_accessor :teams, :rules, :cycles, :start_date, :exclude_dates,:shuffle, :balanced_gt, :balanced_ps
+    attr_accessor :teams, :rules, :cycles, :start_date, :exclude_dates,:shuffle, :group_flights, :balanced_gt, :balanced_ps
 
     def initialize(params={})
       @gamedays = []
@@ -15,6 +15,7 @@ module RRSchedule
       self.balanced_ps = params[:balanced_ps].nil? ? true : params[:balanced_ps]      
       self.exclude_dates = params[:exclude_dates] || []
       self.start_date = params[:start_date] || Date.today
+      self.group_flights = params[:group_flights].nil? ? true : params[:group_flights]
       self.rules = params[:rules] || []
       self
     end
@@ -85,6 +86,15 @@ module RRSchedule
       self
     end
 
+    def total_nbr_games
+      total=0
+
+      @flights.each do |teams|
+         total += (teams.size / 2) * (teams.size-1)
+      end
+      total
+    end
+    
     #human readable schedule
     def to_s
       res = ""
@@ -133,23 +143,46 @@ module RRSchedule
 
     #Dispatch games according to available playing surfaces and game times
     def dispatch_games(rounds)
+
       rounds_copy =  Marshal.load(Marshal.dump(rounds)) #deep clone
-      cur_flight_index = 0
 
-      while !rounds_copy.flatten.empty? do
-        cur_round = rounds_copy[cur_flight_index].shift
-        #process the next round in the current flight
-        if cur_round
-          cur_round.games.each do |game|
-            dispatch_game(game) unless [game.team_a,game.team_b].include?(:dummy)
+      flat_games = []
+      if group_flights
+        while rounds_copy.flatten.size > 0 do
+          @flights.each_with_index do |f,flight_index|
+            flat_games << rounds_copy[flight_index].shift.games
           end
-        end
+        end          
+      else
+        flight_index = round_index = 0
+        game_ctr = 0 
+        while game_ctr < total_nbr_games
+          if rounds_copy[flight_index][round_index] != nil
+            game = rounds_copy[flight_index][round_index].games.shift
+            if game
+              flat_games << game 
+              game_ctr += 1
+            end
+          end
 
-        if cur_flight_index == @flights.size-1
-          cur_flight_index = 0
-        else
-          cur_flight_index += 1
+          #check if round is empty
+          round_empty=true
+          @flights.size.times do |i| 
+            round_empty = round_empty && (rounds_copy[i][round_index].nil? || rounds_copy[i][round_index].games.empty?)
+          end
+          
+          if flight_index == @flights.size-1
+            flight_index = 0
+            round_index+=1 if round_empty
+          else
+            flight_index += 1
+          end          
         end
+      end
+      
+      flat_games.flatten!
+      flat_games.each do |game|
+        dispatch_game(game) unless [game.team_a,game.team_b].include?(:dummy)
       end
 
       #We group our schedule by gameday
