@@ -150,7 +150,8 @@ module RRSchedule
       if group_flights
         while rounds_copy.flatten.size > 0 do
           @flights.each_with_index do |f,flight_index|
-            flat_games << rounds_copy[flight_index].shift.games
+            r = rounds_copy[flight_index].shift
+            flat_games << r.games if r
           end
         end          
       else
