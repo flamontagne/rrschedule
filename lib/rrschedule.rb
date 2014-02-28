@@ -46,7 +46,7 @@ module RRSchedule
             team_b = t.reverse!.shift
             t.reverse!
 
-            x = [team_a,team_b].shuffle
+            x = (current_cycle % 2) == 0 ? [team_a,team_b] : [team_b,team_a]
 
             matchup = {:team_a => x[0], :team_b => x[1]}
             games << matchup
@@ -63,6 +63,8 @@ module RRSchedule
           @rounds[flight_id] ||= []
           @rounds[flight_id] << Round.new(
             :round => current_round,
+            :cycle => current_cycle + 1,
+            :round_with_cycle => current_cycle * (teams.size-1) + current_round,
             :flight => flight_id,
             :games => games.collect { |g|
               Game.new(
@@ -400,10 +402,12 @@ module RRSchedule
   end
 
   class Round
-    attr_accessor :round, :games,:flight
+    attr_accessor :round, :cycle, :round_with_cycle, :games, :flight
 
     def initialize(params={})
       self.round = params[:round]
+      self.cycle = params[:cycle]
+      self.round_with_cycle = params[:round_with_cycle]
       self.flight = params[:flight]
       self.games = params[:games] || []
     end
